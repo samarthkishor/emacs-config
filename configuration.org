@@ -629,8 +629,18 @@
     #+BEGIN_SRC emacs-lisp
      (add-to-list 'auto-mode-alist '("\\.pl\\'" . prolog-mode))
     #+END_SRC
+
+    Use SWI-Prolog as the interpreter.
+
+    #+BEGIN_SRC emacs-lisp
+      (setq prolog-system 'swi)
+
+      (when (executable-find "/usr/local/bin/swipl")
+        (setq prolog-program-name '((swi "/usr/local/bin/swipl") (t "pl"))))
+    #+END_SRC
+
 * Org
-  
+
   Org Mode is the best plain text task management and notetaking system I have ever used. It's one of the "killer apps" for Emacs.
 
 ** General Settings
