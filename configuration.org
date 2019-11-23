@@ -568,6 +568,7 @@
        :init
        (require 'smartparens-config)
        (smartparens-global-mode 1)
+       (sp-use-paredit-bindings)
        :config
        (defun my-create-newline-and-enter-sexp (&rest _ignored)
          "Open a new brace or bracket expression, with relevant newlines and indent. "
@@ -582,12 +583,6 @@
        (sp-local-pair 'web-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
        (sp-local-pair 'typescript-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
        (sp-local-pair 'js-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET"))))
-
-     (use-package evil-smartparens
-       :ensure t
-       :diminish
-       :config
-       (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode))
     #+END_SRC
 
 *** Git Integration
