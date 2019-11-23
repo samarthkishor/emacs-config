@@ -432,6 +432,8 @@
        (add-to-list 'flycheck-checkers 'proselint))
    #+END_SRC
 
+** Plain Text
+
    Use =flycheck= in the appropriate modes for editing plain text.
 
    #+BEGIN_SRC emacs-lisp
@@ -439,6 +441,17 @@
      (add-hook 'gfm-mode-hook #'flycheck-mode)
      (add-hook 'text-mode-hook #'flycheck-mode)
      (add-hook 'org-mode-hook #'flycheck-mode)
+   #+END_SRC
+
+   Catch common writing mistakes.
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package writegood-mode
+       :ensure t
+       :hook ((markdown-mode . writegood-mode)
+              (tex-mode . writegood-mode)
+              (text-mode . writegood-mode)
+              (org-mode . writegood-mode)))
    #+END_SRC
 
 * UI Settings
