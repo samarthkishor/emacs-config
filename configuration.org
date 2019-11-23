@@ -123,6 +123,16 @@
              mac-right-option-modifier 'none))
    #+END_SRC
 
+   Allow Emacs to detect programs and stuff in =$PATH=.
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package exec-path-from-shell
+       :if (memq window-system '(mac ns))
+       :ensure t
+       :config
+       (exec-path-from-shell-initialize))
+   #+END_SRC
+
 ** Evil Mode
 
    Use =evil-mode= for vim emulation inside Emacs.
