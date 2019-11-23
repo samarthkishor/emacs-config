@@ -401,15 +401,30 @@
          "SPC ," "persp switch buffer"))
    #+END_SRC
 
+** Spell Checking
+
+   Use =aspell= as the spell-check program for =flyspell=.
+
+   #+BEGIN_SRC emacs-lisp
+     (setq ispell-program-name "/usr/local/bin/aspell")
+   #+END_SRC
+
 * UI Settings
 ** Theme
 
    I like Doom Themes, especially Nord.
-   
+
    #+BEGIN_SRC emacs-lisp
   (use-package doom-themes
          :ensure t
          :init (load-theme 'doom-nord t))
+   #+END_SRC
+** Font
+
+   Use 12 pt font.
+
+   #+BEGIN_SRC emacs-lisp
+     (set-face-attribute 'default nil :height 120)
    #+END_SRC
 
 ** Window Settings
