@@ -27,7 +27,7 @@
     (use-package counsel
       :ensure t)
    #+END_SRC
-  
+
    Use Ivy as the completion framework. It's faster and more lightweight than Helm.
 
    #+BEGIN_SRC emacs-lisp
@@ -108,7 +108,7 @@
        (define-key persp-mode-map (kbd "C-x p w") #'persp-save-state-to-file)
        (define-key persp-mode-map (kbd "C-x p l") #'persp-load-state-from-file))
    #+END_SRC
-   
+
 * Editing Settings
 ** macOS settings
 
@@ -186,7 +186,7 @@
         ">" 'org-metaright) ; indent
       (evil-mode 1))
    #+END_SRC
-  
+
    Use =evil-leader= to emulate leader key functionality. Set SPACE as the leader key.
 
    #+BEGIN_SRC emacs-lisp
@@ -220,8 +220,8 @@
       :ensure t
       :requires (evil)
       :hook (prog-mode . evil-commentary-mode))
-   #+END_SRC  
-  
+   #+END_SRC
+
    Use =evil-surround= to emulate =surround.vim=.
 
    #+BEGIN_SRC emacs-lisp
@@ -260,7 +260,7 @@
             image-dired-mode
             image-dired-thumbnail-mode
             eww-mode))
-   #+END_SRC 
+   #+END_SRC
 
 ** Encoding
 
@@ -326,7 +326,7 @@
    #+BEGIN_SRC emacs-lisp
      (add-hook 'prog-mode-hook #'hs-minor-mode)
    #+END_SRC
-   
+
 ** Undo tree
 
    Use =undo-tree= for better undo history.
@@ -380,14 +380,13 @@
    #+BEGIN_SRC emacs-lisp
      (use-package iedit
        :ensure t
-       :defer t
        :after evil-leader
        :config
        (evil-leader/set-key "r" 'iedit-mode))
    #+END_SRC
 
 ** Command Completion
-   
+
    Use =which-key= to offer suggestions for completing a command.
 
    #+BEGIN_SRC emacs-lisp
@@ -465,7 +464,7 @@
    #+BEGIN_SRC emacs-lisp
      (setq-default inhibit-startup-screen t)
    #+END_SRC
-   
+
 ** Modeline
 
    Doom Modeline looks great.
@@ -487,7 +486,7 @@
    #+END_SRC
 
 ** Line Settings
-   
+
    Highlight the current line.
 
    #+BEGIN_SRC emacs-lisp
@@ -559,7 +558,7 @@
        :config
        (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
     #+END_SRC
-   
+
     Use =smartparens= as a =paredit= alternative.
 
     #+BEGIN_SRC emacs-lisp
@@ -633,19 +632,19 @@
        :init
        (add-hook 'org-mode-hook #'org-bullets-mode))
    #+END_SRC
-   
+
    Use syntax highlighting in source blocks while editing.
 
    #+BEGIN_SRC emacs-lisp
      (setq org-src-fontify-natively t)
    #+END_SRC
-   
+
    Enable spellchecking.
 
    #+BEGIN_SRC emacs-lisp
      (add-hook 'org-mode-hook 'flyspell-mode)
    #+END_SRC
-   
+
    Set up refile targets.
 
    #+BEGIN_SRC emacs-lisp
@@ -658,7 +657,7 @@
    #+BEGIN_SRC emacs-lisp
      (add-hook 'org-mode-hook 'visual-line-mode)
    #+END_SRC
-   
+
 ** Task Management
 
    Store org files in Dropbox.
@@ -711,7 +710,7 @@
        (shrink-window-if-larger-than-buffer)
        (other-window 1))
    #+END_SRC
-   
+
 ** Exporting
 
    Change straight quotes to curly quotes when exporting.
