@@ -1,0 +1,12 @@
+#+TITLE: Samarth's Custom Emacs Configuration
+#+AUTHOR: Samarth Kishor
+
+* Description
+
+This is my second try at making a custom Emacs configuration. I'm trying to make this a bit less bloated and stick to the bare essentials (without sacrificing nice things I'm used to).
+
+The file =configuration.org= contains most of the settings in a literate format.
+
+* License
+
+MIT License
