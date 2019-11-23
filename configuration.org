@@ -1,6 +1,6 @@
 #+TITLE: Emacs Configuration
 #+AUTHOR: Samarth Kishor
-#+OPTIONS: toc:nil num:nil
+#+OPTIONS: num:nil
 
 * Use =use-package=
 
