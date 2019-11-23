@@ -161,7 +161,6 @@
       (setq evil-want-fine-undo t)
       (setq evil-shift-width 2)
       (setq evil-want-abbrev-expand-on-insert-exit nil)
-      (define-key evil-normal-state-map (kbd "q") nil)
       (define-key evil-normal-state-map (kbd "M-.") nil)
       (define-key evil-normal-state-map (kbd "M-,") nil)
       (define-key evil-normal-state-map (kbd "C-A") 'evil-numbers/inc-at-pt)
