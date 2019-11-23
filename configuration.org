@@ -610,6 +610,17 @@
            (add-hook 'git-commit-mode-hook 'turn-on-flyspell)
            (add-hook 'with-editor-mode-hook 'evil-insert-state))
       #+END_SRC
+*** Annotation Highlighting
+
+    Highlight annotations in code.
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package hl-todo
+        :ensure t
+        :init
+        (global-hl-todo-mode))
+    #+END_SRC
+
 ** Programming Languages
 *** Prolog
 
