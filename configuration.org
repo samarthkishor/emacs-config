@@ -710,8 +710,8 @@
     #+BEGIN_SRC emacs-lisp
       (setq prolog-system 'swi)
 
-      (when (executable-find "/usr/local/bin/swipl")
-        (setq prolog-program-name '((swi "/usr/local/bin/swipl") (t "pl"))))
+      (when (executable-find "swipl")
+        (setq prolog-program-name `((swi ,(executable-find "swipl")) (t "pl"))))
     #+END_SRC
 
 * Org
