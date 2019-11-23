@@ -16,7 +16,8 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (org-bullets all-the-icons-ivy ivy-rich persp-mode evil-smartparens smartparens evil-magit magit rainbow-delimiters which-key counsel-projectile projectile evil-surround evil-commentary evil-leader doom-modeline doom-themes evil-numbers evil use-package))))
+    (writegood-mode flycheck exec-path-from-shell hl-todo org-bullets all-the-icons-ivy ivy-rich persp-mode evil-smartparens smartparens evil-magit magit rainbow-delimiters which-key counsel-projectile projectile evil-surround evil-commentary evil-leader doom-modeline doom-themes evil-numbers evil use-package)))
+ '(safe-local-variable-values (quote ((eval progn (pp-buffer) (indent-buffer))))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
