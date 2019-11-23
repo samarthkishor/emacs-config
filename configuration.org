@@ -247,8 +247,7 @@
       (define-and-bind-quoted-text-object "pipe" "|" "|" "|")
       (define-and-bind-quoted-text-object "slash" "/" "/" "/")
       (define-and-bind-quoted-text-object "star" "*" "*" "*")
-      (define-and-bind-quoted-text-object "dollar" "$" "\\$" "\\$")
-      (add-hook 'org-mode-hook (define-and-bind-quoted-text-object "equals" "=" "=" "=")))
+      (define-and-bind-quoted-text-object "dollar" "$" "\\$" "\\$"))
    #+END_SRC
 
    Disable evil-mode for some modes since it can cause problems.
