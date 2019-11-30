@@ -113,9 +113,13 @@
    #+BEGIN_SRC emacs-lisp
      (use-package persp-mode
        :ensure t
+       :after ivy
        :config
        (setq wg-morph-on nil) ;; switch off animation
        (setq persp-autokill-buffer-on-remove 'kill-weak)
+       (setq persp-auto-save-opt 0) ;; never autosave perspectives
+       (setq persp-init-frame-behaviour nil)
+       (setq persp-auto-resume-time 0)
        (add-hook 'after-init-hook #'(lambda () (persp-mode 1)))
        (global-set-key (kbd "C-x p b")
                        #'(lambda (arg)
@@ -129,7 +133,103 @@
        (define-key persp-mode-map (kbd "C-x p i") #'persp-import-buffers)
        (define-key persp-mode-map (kbd "C-x p k") #'persp-remove-buffer)
        (define-key persp-mode-map (kbd "C-x p w") #'persp-save-state-to-file)
-       (define-key persp-mode-map (kbd "C-x p l") #'persp-load-state-from-file))
+       (define-key persp-mode-map (kbd "C-x p l") #'persp-load-state-from-file)
+       ;; ivy compatibility
+       (add-hook 'ivy-ignore-buffers
+                 #'(lambda (b)
+                     (when persp-mode
+                       (let ((persp (get-current-persp)))
+                         (if persp
+                             (not (persp-contain-buffer-p b persp))
+                           nil)))))
+       (setq ivy-sort-functions-alist
+             (append ivy-sort-functions-alist
+                     '((persp-kill-buffer   . nil)
+                       (persp-remove-buffer . nil)
+                       (persp-add-buffer    . nil)
+                       (persp-switch        . nil)
+                       (persp-window-switch . nil)
+                       (persp-frame-switch  . nil))))
+
+       ;; Integrate with projectile
+       (use-package persp-mode-projectile-bridge
+         :config
+         (add-hook 'persp-mode-projectile-bridge-mode-hook
+                   #'(lambda ()
+                       (if persp-mode-projectile-bridge-mode
+                           (persp-mode-projectile-bridge-find-perspectives-for-all-buffers)
+                         (persp-mode-projectile-bridge-kill-perspectives))))
+         (add-hook 'after-init-hook
+                   #'(lambda ()
+                       (persp-mode-projectile-bridge-mode 1))
+                   t))
+
+       ;; Add a nice modeline GUI for workspaces
+       ;; Source: https://github.com/hlissner/doom-emacs/blob/develop/modules/ui/workspaces/autoload/workspaces.el
+       (defface +workspace-tab-selected-face '((t (:inherit highlight)))
+         "The face for selected tabs displayed by `+workspace/display'"
+         :group 'persp-mode)
+
+       (defface +workspace-tab-face '((t (:inherit default)))
+         "The face for selected tabs displayed by `+workspace/display'"
+         :group 'persp-mode)
+
+       (defun +workspace-list ()
+         "Return a list of workspace structs (satisifes `+workspace-p')."
+         ;; We don't use `hash-table-values' because it doesn't ensure order in older
+         ;; versions of Emacs
+         (cdr (cl-loop for persp being the hash-values of *persp-hash*
+                       collect persp)))
+
+       (defun +workspace-list-names ()
+         "Return the list of names of open workspaces."
+         (mapcar #'safe-persp-name (+workspace-list)))
+
+       (defalias #'+workspace-current #'get-current-persp
+         "Return the currently active workspace.")
+
+       (defun +workspace-current-name ()
+         "Get the name of the current workspace."
+         (safe-persp-name (+workspace-current)))
+
+       (defun +workspace--tabline (&optional names)
+         (let ((names (or names (+workspace-list-names)))
+               (current-name (+workspace-current-name)))
+           (mapconcat
+            #'identity
+            (cl-loop for name in names
+                     for i to (length names)
+                     collect
+                     (propertize (format " [%d] %s " (1+ i) name)
+                                 'face (if (equal current-name name)
+                                           '+workspace-tab-selected-face
+                                         '+workspace-tab-face)))
+            " ")))
+
+       (defun +workspace--message-body (message &optional type)
+         (concat (+workspace--tabline)
+                 (propertize " | " 'face 'font-lock-comment-face)
+                 (propertize (format "%s" message)
+                             'face (pcase type
+                                     ('error 'error)
+                                     ('warn 'warning)
+                                     ('success 'success)
+                                     ('info 'font-lock-comment-face)))))
+
+       (defun +workspace-message (message &optional type)
+         "Show an 'elegant' message in the echo area next to a listing of workspaces."
+         (message "%s" (+workspace--message-body message type)))
+
+       (defun +workspace-error (message &optional noerror)
+         "Show an 'elegant' error in the echo area next to a listing of workspaces."
+         (funcall (if noerror #'message #'error)
+                  "%s" (+workspace--message-body message 'error)))
+
+       (defun +workspace/display ()
+         "Display a list of workspaces (like tabs) in the echo area."
+         (interactive)
+         (let (message-log-max)
+           (message "%s" (+workspace--tabline)))))
    #+END_SRC
 
 * Editing Settings
@@ -212,27 +312,29 @@
    Use =evil-leader= to emulate leader key functionality. Set SPACE as the leader key.
 
    #+BEGIN_SRC emacs-lisp
-    (use-package evil-leader
-      :commands (evil-leader-mode global-evil-leader-mode)
-      :ensure t
-      :init
-      (setq evil-leader/in-all-states 1)
-      (global-evil-leader-mode t)
-      :config
-      (evil-leader/set-leader "<SPC>")
-      (evil-leader/set-key
-        "h"  'evil-window-left
-        "j"  'evil-window-bottom
-        "k"  'evil-window-up
-        "l"  'evil-window-right
-        "b"  'ivy-switch-buffer
-        "m"  'counsel-imenu
-        "e" 'flycheck-list-errors
-        "," '(lambda (arg)
-               (interactive "P")
-               (with-persp-buffer-list () (counsel-switch-buffer)))
-        "gg" 'magit-status
-        "pp" 'counsel-projectile-switch-project))
+     (use-package evil-leader
+       :commands (evil-leader-mode global-evil-leader-mode)
+       :ensure t
+       :init
+       (setq evil-leader/in-all-states 1)
+       (global-evil-leader-mode t)
+       :config
+       (evil-leader/set-leader "<SPC>")
+       (evil-leader/set-key
+         "TAB" '+workspace/display
+         "h"  'evil-window-left
+         "j"  'evil-window-bottom
+         "k"  'evil-window-up
+         "l"  'evil-window-right
+         "b"  'ivy-switch-buffer
+         "m"  'counsel-imenu
+         "e" 'flycheck-list-errors
+         "," '(lambda (arg)
+                (interactive "P")
+                (with-persp-buffer-list () (counsel-switch-buffer)))
+         "gg" 'magit-status
+         "fr" 'counsel-recentf
+         "pp" 'counsel-projectile-switch-project))
    #+END_SRC
 
    Use =evil-commentary= to make commenting lines easier.
