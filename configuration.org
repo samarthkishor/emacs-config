@@ -2,7 +2,13 @@
 #+AUTHOR: Samarth Kishor
 #+OPTIONS: num:nil
 
-* Use =use-package=
+* Lexical Scoping
+
+  Use lexical scoping in the =configuration.el= file.
+
+  #+BEGIN_SRC emacs-lisp
+    ;;; -*- lexical-binding: t -*-
+  #+END_SRC
 
   #+BEGIN_SRC emacs-lisp
     (unless (package-installed-p 'use-package)
