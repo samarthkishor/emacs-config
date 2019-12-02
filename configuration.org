@@ -974,7 +974,9 @@
         :hook (merlin-mode . merlin-eldoc-setup))
 
       (use-package utop
-        :hook (tuareg-mode . utop-minor-mode))
+        :hook (tuareg-mode . utop-minor-mode)
+        :config
+        (setq utop-command "opam config exec -- dune utop . -- -emacs"))
 
       ;; bootstrap ocamlformat with straight.el
       (straight-use-package
