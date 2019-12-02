@@ -876,6 +876,29 @@
         :init
         (global-hl-todo-mode))
     #+END_SRC
+*** Autocomplete
+
+    Company is a solid completion engine for Emacs.
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package company
+        :ensure t
+        :hook (prog-mode . company-mode)
+        :init
+        (setq company-minimum-prefix-length 2
+              company-tooltip-limit 14
+              company-dabbrev-downcase nil
+              company-dabbrev-ignore-case nil
+              company-dabbrev-code-other-buffers t
+              company-tooltip-align-annotations t
+              company-require-match 'never
+              company-global-modes
+              '(not erc-mode message-mode help-mode gud-mode eshell-mode)
+              company-backends '(company-capf)
+              company-frontends
+              '(company-pseudo-tooltip-frontend
+                company-echo-metadata-frontend)))
+    #+END_SRC
 
 ** Programming Languages
 *** Prolog
