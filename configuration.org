@@ -961,7 +961,14 @@
                      :files ("emacs/*.el")))
 
       (with-eval-after-load 'ocamlformat
-        (add-hook 'tuareg-mode-hook #'(lambda () (add-hook 'before-save-hook 'ocamlformat-before-save))))
+        (progn
+          ;; HACK set the correct ocamlformat executable
+          (let ((ocamlformat-path (concat (substring (shell-command-to-string "eval $(opam env) && echo $OPAM_SWITCH_PREFIX") 0 -1) "/bin/ocamlformat")))
+            (if (executable-find ocamlformat-path)
+                (progn
+                  (setq ocamlformat-command "/Users/samarth/Projects/AdventOfCode_2019/_opam/bin/ocamlformat")
+                  (add-hook 'tuareg-mode-hook #'(lambda () (add-hook 'before-save-hook 'ocamlformat-before-save))))
+              (message "Error: ocamlformat is not installed")))))
 
       (let ((opam-share (ignore-errors (car (process-lines "opam" "config" "var" "share")))))
         (when (and opam-share (file-directory-p opam-share))
