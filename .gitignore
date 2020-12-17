@@ -5,6 +5,14 @@
 /places
 /persp-confs/
 /elpa/
-/straight/
 /tramp
 flycheck_*
+
+# only commit select straight repos to git
+!straight/
+
+straight/*
+!straight/repos/
+
+straight/repos/*
+!straight/repos/prot-lisp/
