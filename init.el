@@ -1,29 +1,46 @@
-(require 'package)
-(setq package-enable-at-startup nil)
+;; init.el --- Personal GNU Emacs configuration file.
 
-;; (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/"))
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
-;; (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/"))
+;;; Code:
 
-(package-initialize)
+(setq straight-use-package-by-default nil)
 
-;; Load configuration file written in org
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+(straight-use-package 'use-package)
+
+;; Configure `use-package' prior to loading it.
+(eval-and-compile
+  (setq use-package-always-ensure nil)  ; ESSENTIAL for `straight.el'
+  (setq use-package-always-defer nil)
+  (setq use-package-always-demand nil)
+  (setq use-package-expand-minimally nil)
+  (setq use-package-enable-imenu-support t)
+  (setq use-package-compute-statistics nil)
+  ;; The following is VERY IMPORTANT.  Write hooks using their real name
+  ;; instead of a shorter version: after-init ==> `after-init-hook'.
+  ;;
+  ;; This is to empower help commands with their contextual awareness,
+  ;; such as `describe-symbol'.
+  (setq use-package-hook-name-suffix nil))
+
+;; provides `straight-x-clean-unused-repos' (part of `straight.el')
+(use-package straight-x)
+
+(use-package vc
+  :config
+  (setq vc-follow-symlinks t)) ; Because my dotfiles are managed that way
+
 (org-babel-load-file "~/.emacs.d/configuration.org")
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (ocamlformat merlin-eldoc flycheck-ocaml merlin tuareg writegood-mode flycheck exec-path-from-shell hl-todo org-bullets all-the-icons-ivy ivy-rich persp-mode evil-smartparens smartparens evil-magit magit rainbow-delimiters which-key counsel-projectile projectile evil-surround evil-commentary evil-leader doom-modeline doom-themes evil-numbers evil use-package)))
- '(safe-local-variable-values (quote ((eval progn (pp-buffer) (indent-buffer))))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
-(require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
-;; ## end of OPAM user-setup addition for emacs / base ## keep this line
+
+;;; init.el ends here

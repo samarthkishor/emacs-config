@@ -1,270 +1,28 @@
-#+TITLE: Emacs Configuration
+#+TITLE: GNU Emacs package configuration file
 #+AUTHOR: Samarth Kishor
-#+OPTIONS: num:nil
 
-* Lexical Scoping
+* macOS
 
-  Use lexical scoping in the =configuration.el= file.
+  #+begin_src emacs-lisp
+    (when (eq system-type 'darwin)
+      (setq mac-option-modifier 'meta
+	    mac-command-modifier 'control
+	    mac-control-modifier 'super
+	    mac-right-command-modifier 'super
+	    mac-right-option-modifier 'none))
 
-  #+BEGIN_SRC emacs-lisp
-    ;;; -*- lexical-binding: t -*-
-  #+END_SRC
-
-* Use =use-package= and =straight=
-
-  #+BEGIN_SRC emacs-lisp
-    (defvar bootstrap-version)
-    (let ((bootstrap-file
-           (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-          (bootstrap-version 5))
-      (unless (file-exists-p bootstrap-file)
-        (with-current-buffer
-            (url-retrieve-synchronously
-             "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-             'silent 'inhibit-cookies)
-          (goto-char (point-max))
-          (eval-print-last-sexp)))
-      (load bootstrap-file nil 'nomessage))
-  #+END_SRC
-
-  #+BEGIN_SRC emacs-lisp
-    (unless (package-installed-p 'use-package)
-      (package-refresh-contents)
-      (package-install 'use-package))
-
-    (setq use-package-verbose t)
-    (setq use-package-always-ensure t)
-
-    (eval-when-compile
-      (require 'use-package))
-  #+END_SRC
-
-* Editor Settings
-** Completion Interface
-
-   Emacs isn't complete without a nice completion interface.
-
-   I prefer =counsel= and its family of packages.
-
-   #+BEGIN_SRC emacs-lisp
-    (use-package counsel
-      :ensure t)
-   #+END_SRC
-
-   Use Ivy as the completion framework. It's faster and more lightweight than Helm.
-
-   #+BEGIN_SRC emacs-lisp
-    (use-package ivy
-      :ensure t
+    (use-package exec-path-from-shell
+      :if (memq window-system '(mac ns))
+      :straight t
       :config
-      (ivy-mode 1)
-      (setq ivy-use-virtual-buffers t)
-      (setq enable-recursive-minibuffers t)
-      (setq ivy-height 10)
-      (setq ivy-count-format "")
-      (setq ivy-initial-inputs-alist nil)
-      (global-set-key "\C-s" 'swiper)
-      (global-set-key (kbd "M-x") 'counsel-M-x)
-      (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-      (global-set-key (kbd "C-c g") 'counsel-git)
-      (global-set-key (kbd "C-c s") 'counsel-ag)
-      (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history))
-   #+END_SRC
-
-   Use a more friendly interface for ivy.
-
-   #+BEGIN_SRC emacs-lisp
-    (use-package ivy-rich
-      :ensure t
-      :init
-      (ivy-rich-mode 1)
-      :config
-      '(counsel-M-x
-        (:columns
-         ((counsel-M-x-transformer (:width 40))  ; the original transfomer
-          (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))  ; return the docstring of the command
-        counsel-describe-function
-        (:columns
-         ((counsel-describe-function-transformer (:width 40))  ; the original transformer
-          (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))  ; return the docstring of the function
-        counsel-describe-variable
-        (:columns
-         ((counsel-describe-variable-transformer (:width 40))  ; the original transformer
-          (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))  ; return the docstring of the variable
-        counsel-recentf
-        (:columns
-         ((ivy-rich-candidate (:width 0.8)) ; return the candidate itself
-          (ivy-rich-file-last-modified-time (:face font-lock-comment-face)))))) ; return the last modified time of the file
-   #+END_SRC
-
-   Add all-the-icons to ivy. You might need to run =all-the-icons-install-fonts=.
-
-   #+BEGIN_SRC emacs-lisp
-    (use-package all-the-icons-ivy
-      :ensure t
-      :config
-      (all-the-icons-ivy-setup))
-   #+END_SRC
-
-** Workspaces
-
-   Use =persp-mode= to manage workspaces.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package persp-mode
-       :ensure t
-       :after ivy
-       :config
-       (setq wg-morph-on nil) ;; switch off animation
-       (setq persp-autokill-buffer-on-remove 'kill-weak)
-       (setq persp-auto-save-opt 0) ;; never autosave perspectives
-       (setq persp-init-frame-behaviour nil)
-       (setq persp-auto-resume-time 0)
-       (add-hook 'after-init-hook #'(lambda () (persp-mode 1)))
-       (global-set-key (kbd "C-x p b")
-                       #'(lambda (arg)
-                           (interactive "P")
-                           (with-persp-buffer-list () (counsel-switch-buffer))))
-       (define-key persp-mode-map (kbd "C-x p n") #'persp-add-new)
-       (define-key persp-mode-map (kbd "C-x p s") #'persp-switch)
-       (define-key persp-mode-map (kbd "C-x p r") #'persp-rename)
-       (define-key persp-mode-map (kbd "C-x p c") #'persp-kill)
-       (define-key persp-mode-map (kbd "C-x p a") #'persp-add-buffer)
-       (define-key persp-mode-map (kbd "C-x p i") #'persp-import-buffers)
-       (define-key persp-mode-map (kbd "C-x p k") #'persp-remove-buffer)
-       (define-key persp-mode-map (kbd "C-x p w") #'persp-save-state-to-file)
-       (define-key persp-mode-map (kbd "C-x p l") #'persp-load-state-from-file)
-       ;; ivy compatibility
-       (add-hook 'ivy-ignore-buffers
-                 #'(lambda (b)
-                     (when persp-mode
-                       (let ((persp (get-current-persp)))
-                         (if persp
-                             (not (persp-contain-buffer-p b persp))
-                           nil)))))
-       (setq ivy-sort-functions-alist
-             (append ivy-sort-functions-alist
-                     '((persp-kill-buffer   . nil)
-                       (persp-remove-buffer . nil)
-                       (persp-add-buffer    . nil)
-                       (persp-switch        . nil)
-                       (persp-window-switch . nil)
-                       (persp-frame-switch  . nil))))
-
-       ;; Integrate with projectile
-       (use-package persp-mode-projectile-bridge
-         :config
-         (add-hook 'persp-mode-projectile-bridge-mode-hook
-                   #'(lambda ()
-                       (if persp-mode-projectile-bridge-mode
-                           (persp-mode-projectile-bridge-find-perspectives-for-all-buffers)
-                         (persp-mode-projectile-bridge-kill-perspectives))))
-         (add-hook 'after-init-hook
-                   #'(lambda ()
-                       (persp-mode-projectile-bridge-mode 1))
-                   t))
-
-       ;; Add a nice modeline GUI for workspaces
-       ;; Source: https://github.com/hlissner/doom-emacs/blob/develop/modules/ui/workspaces/autoload/workspaces.el
-       (defface +workspace-tab-selected-face '((t (:inherit highlight)))
-         "The face for selected tabs displayed by `+workspace/display'"
-         :group 'persp-mode)
-
-       (defface +workspace-tab-face '((t (:inherit default)))
-         "The face for selected tabs displayed by `+workspace/display'"
-         :group 'persp-mode)
-
-       (defun +workspace-list ()
-         "Return a list of workspace structs (satisifes `+workspace-p')."
-         ;; We don't use `hash-table-values' because it doesn't ensure order in older
-         ;; versions of Emacs
-         (cdr (cl-loop for persp being the hash-values of *persp-hash*
-                       collect persp)))
-
-       (defun +workspace-list-names ()
-         "Return the list of names of open workspaces."
-         (mapcar #'safe-persp-name (+workspace-list)))
-
-       (defalias #'+workspace-current #'get-current-persp
-         "Return the currently active workspace.")
-
-       (defun +workspace-current-name ()
-         "Get the name of the current workspace."
-         (safe-persp-name (+workspace-current)))
-
-       (defun +workspace--tabline (&optional names)
-         (let ((names (or names (+workspace-list-names)))
-               (current-name (+workspace-current-name)))
-           (mapconcat
-            #'identity
-            (cl-loop for name in names
-                     for i to (length names)
-                     collect
-                     (propertize (format " [%d] %s " (1+ i) name)
-                                 'face (if (equal current-name name)
-                                           '+workspace-tab-selected-face
-                                         '+workspace-tab-face)))
-            " ")))
-
-       (defun +workspace--message-body (message &optional type)
-         (concat (+workspace--tabline)
-                 (propertize " | " 'face 'font-lock-comment-face)
-                 (propertize (format "%s" message)
-                             'face (pcase type
-                                     ('error 'error)
-                                     ('warn 'warning)
-                                     ('success 'success)
-                                     ('info 'font-lock-comment-face)))))
-
-       (defun +workspace-message (message &optional type)
-         "Show an 'elegant' message in the echo area next to a listing of workspaces."
-         (message "%s" (+workspace--message-body message type)))
-
-       (defun +workspace-error (message &optional noerror)
-         "Show an 'elegant' error in the echo area next to a listing of workspaces."
-         (funcall (if noerror #'message #'error)
-                  "%s" (+workspace--message-body message 'error)))
-
-       (defun +workspace/display ()
-         "Display a list of workspaces (like tabs) in the echo area."
-         (interactive)
-         (let (message-log-max)
-           (message "%s" (+workspace--tabline)))))
-   #+END_SRC
-
-* Editing Settings
-** macOS settings
-
-   Set command to control and option to meta.
-
-   #+BEGIN_SRC emacs-lisp
-     (when (eq system-type 'darwin)
-       (setq mac-option-modifier 'meta
-             mac-command-modifier 'control
-             mac-control-modifier 'super
-             mac-right-command-modifier 'super
-             mac-right-option-modifier 'none))
-   #+END_SRC
-
-   Allow Emacs to detect programs and stuff in =$PATH=.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package exec-path-from-shell
-       :if (memq window-system '(mac ns))
-       :ensure t
-       :config
-       (exec-path-from-shell-initialize))
-   #+END_SRC
-
-** Evil Mode
-
-   Use =evil-mode= for vim emulation inside Emacs.
-
-   Source: [[https://github.com/bbatsov/prelude/blob/master/modules/prelude-evil.el][Emacs Prelude]]
-
-   #+BEGIN_SRC emacs-lisp
+      (exec-path-from-shell-initialize))
+  #+end_src
+  
+* =evil-mode=
+  
+  #+begin_src emacs-lisp
     (use-package evil
-      :ensure t
+      :straight t
       :init
       (setq evil-want-integration nil)
       :config
@@ -280,14 +38,9 @@
         (evil-shift-right (region-beginning) (region-end))
         (evil-normal-state)
         (evil-visual-restore))
-      (use-package evil-numbers :ensure t)
       (setq evil-want-fine-undo t)
       (setq evil-shift-width 2)
       (setq evil-want-abbrev-expand-on-insert-exit nil)
-      (define-key evil-normal-state-map (kbd "M-.") nil)
-      (define-key evil-normal-state-map (kbd "M-,") nil)
-      (define-key evil-normal-state-map (kbd "C-A") 'evil-numbers/inc-at-pt)
-      (define-key evil-normal-state-map (kbd "C-S-A") 'evil-numbers/dec-at-pt)
       (define-key evil-visual-state-map (kbd ">") 'prelude-shift-right-visual)
       (define-key evil-visual-state-map (kbd "<") 'prelude-shift-left-visual)
       (evil-define-key nil evil-normal-state-map
@@ -296,10 +49,6 @@
       (evil-declare-key 'normal org-mode-map
         "gk" 'outline-up-heading
         "gj" 'outline-next-visible-heading
-        "H" 'org-beginning-of-line ; smarter behavior on headlines etc.
-        "L" 'org-end-of-line ; smarter behavior on headlines etc.
-        "t" 'org-todo ; mark a TODO item as DONE
-        ",c" 'org-cycle
         (kbd "TAB") 'org-cycle
         "$" 'org-end-of-line ; smarter behavior on headlines etc.
         "^" 'org-beginning-of-line ; ditto
@@ -307,600 +56,1294 @@
         "<" 'org-metaleft ; out-dent
         ">" 'org-metaright) ; indent
       (evil-mode 1))
-   #+END_SRC
+  #+end_src
 
-   Use =evil-leader= to emulate leader key functionality. Set SPACE as the leader key.
 
-   #+BEGIN_SRC emacs-lisp
-     (use-package evil-leader
-       :commands (evil-leader-mode global-evil-leader-mode)
-       :ensure t
-       :init
-       (setq evil-leader/in-all-states 1)
-       (global-evil-leader-mode t)
+  ;; good performance on long lines
+
+  (use-package emacs
+  :config
+  (setq-default bidi-paragraph-direction 'left-to-right)
+  (setq bidi-inhibit-bpa t))
+
+  (use-package so-long
+  :config
+  (global-so-long-mode 1))
+
+  ;; Completions
+
+* Theme
+** General settings
+
+   #+begin_src emacs-lisp
+     (use-package emacs
        :config
-       (evil-leader/set-leader "<SPC>")
-       (evil-leader/set-key
-         "TAB" '+workspace/display
-         "h"  'evil-window-left
-         "j"  'evil-window-bottom
-         "k"  'evil-window-up
-         "l"  'evil-window-right
-         "b"  'ivy-switch-buffer
-         "m"  'counsel-imenu
-         "e" 'flycheck-list-errors
-         "," '(lambda (arg)
-                (interactive "P")
-                (with-persp-buffer-list () (counsel-switch-buffer)))
-         "gg" 'magit-status
-         "fr" 'counsel-recentf
-         "pp" 'counsel-projectile-switch-project))
-   #+END_SRC
+       (setq frame-title-format '("%b"))
+       (setq echo-keystrokes 0.25)
+       (setq default-input-method "greek")
+       (setq ring-bell-function 'ignore)
 
-   Use =evil-commentary= to make commenting lines easier.
+       (defalias 'yes-or-no-p 'y-or-n-p)
+       (put 'narrow-to-region 'disabled nil)
+       (put 'upcase-region 'disabled nil)
+       (put 'downcase-region 'disabled nil)
+       (put 'dired-find-alternate-file 'disabled nil)
+       (put 'overwrite-mode 'disabled t)
+       (setq mode-require-final-newline 'visit-save))
+   #+end_src
 
-   #+BEGIN_SRC emacs-lisp
-    (use-package evil-commentary
-      :ensure t
-      :requires (evil)
-      :hook (prog-mode . evil-commentary-mode))
-   #+END_SRC
+** Remove useless modeline indicators
 
-   Use =evil-surround= to emulate =surround.vim=.
+   #+begin_src emacs-lisp
+     (use-package diminish
+       :straight t
+       :after use-package)
+   #+end_src
 
-   #+BEGIN_SRC emacs-lisp
-    (use-package evil-surround
-      :config
-      (global-evil-surround-mode 1)
-      (add-hook 'c++-mode-hook (lambda ()
-                                 (push '(?< . ("< " . " >")) evil-surround-pairs-alist)))
-      (add-hook 'java-mode-hook (lambda ()
-                                  (push '(?< . ("< " . " >")) evil-surround-pairs-alist)))
+** Put customization settings in a separate file
 
-      (defmacro define-and-bind-quoted-text-object (name key start-regex end-regex)
-        (let ((inner-name (make-symbol (concat "evil-inner-" name)))
-              (outer-name (make-symbol (concat "evil-a-" name))))
-          `(progn
-             (evil-define-text-object ,inner-name (count &optional beg end type)
-               (evil-select-paren ,start-regex ,end-regex beg end type count nil))
-             (evil-define-text-object ,outer-name (count &optional beg end type)
-               (evil-select-paren ,start-regex ,end-regex beg end type count t))
-             (define-key evil-inner-text-objects-map ,key #',inner-name)
-             (define-key evil-outer-text-objects-map ,key #',outer-name))))
+   Source: [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/emacs-init.org][Prot's dotfiles]].
 
-      (define-and-bind-quoted-text-object "pipe" "|" "|" "|")
-      (define-and-bind-quoted-text-object "slash" "/" "/" "/")
-      (define-and-bind-quoted-text-object "star" "*" "*" "*")
-      (define-and-bind-quoted-text-object "dollar" "$" "\\$" "\\$"))
-   #+END_SRC
+   When you install a package or use the various customisation interfaces
+   to tweak things to your liking, Emacs will append a piece of Elisp to
+   your init file.  In my experience, this is a common source of
+   inconsistencies, arising from a conflict between the user’s code and
+   what is stored in that added custom snippet.
 
-   Disable evil-mode for some modes since it can cause problems.
+   As such, I prefer to have all “custom” code stored in a separate,
+   disposable file that I do not keep under version control.  When
+   something does not seem to work as intended it is easy to edit
+   =~/.emacs.d/custom.el= or outright delete it.
 
-   #+BEGIN_SRC emacs-lisp
-    (mapc (lambda (mode)
-            (evil-set-initial-state mode 'emacs))
-          '(dired-mode
-            image-dired-mode
-            image-dired-thumbnail-mode
-            eww-mode))
-   #+END_SRC
-
-** Encoding
-
-   Use UTF-8 encoding everywhere.
-
-   #+BEGIN_SRC emacs-lisp
-     (set-language-environment "UTF-8")
-     (set-default-coding-systems 'utf-8)
-   #+END_SRC
-
-** Backup Files
-
-   Write backup files to their own directory, even if they are in version control.
-
-   Source: [[http://whattheemacsd.com/init.el-02.html][What the .emacs.d]]
-
-   #+BEGIN_SRC emacs-lisp
-     (setq backup-directory-alist
-           `(("." . ,(expand-file-name
-                      (concat user-emacs-directory "backups")))))
-
-     (setq vc-make-backup-files t)
-   #+END_SRC
-
-   Don't create lockfiles (files that start with #).
-
-   #+BEGIN_SRC emacs-lisp
-     (setq create-lockfiles nil)
-   #+END_SRC
-
-** Save location within a file
-
-   If I close the file and open it later, I will return to the place I left off.
-
-   #+BEGIN_SRC emacs-lisp
-     (save-place-mode t)
-   #+END_SRC
-
-** Auto revert files on change
-
-   When something changes a file, automatically refresh the buffer containing that file so they can’t get out of sync.
-
-   #+BEGIN_SRC emacs-lisp
-     (global-auto-revert-mode t)
-   #+END_SRC
-
-** Always indent with spaces
-
-   No explanation needed.
-
-   #+BEGIN_SRC emacs-lisp
-     (setq-default indent-tabs-mode nil)
-   #+END_SRC
-
-** Code folding
-
-   Enable code folding for programming modes.
-
-   =zc= Fold
-   =za= Toggle fold
-   =zR= Unfold everything
-
-   #+BEGIN_SRC emacs-lisp
-     (add-hook 'prog-mode-hook #'hs-minor-mode)
-   #+END_SRC
-
-** Undo tree
-
-   Use =undo-tree= for better undo history.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package undo-tree
-       :ensure t
-       :init
-       (global-undo-tree-mode))
-   #+END_SRC
-
-** Whitespace
-
-   Delete trailing whitespace after saving in all modes except markdown-mode and org-mode.
-   Markdown uses two trailing blanks to signal a line break.
-
-   Source: [[https://github.com/munen/emacs.d/#delete-trailing-whitespace]]
-
-   #+BEGIN_SRC emacs-lisp
-     (add-hook 'before-save-hook '(lambda ()
-                                    (when (not (or (derived-mode-p 'markdown-mode)
-                                                   (derived-mode-p 'org-mode)))
-                                      (delete-trailing-whitespace))))
-   #+END_SRC
-
-   Declare an interactive function to clean whitespace and indent the buffer.
-
-   Source: https://github.com/wandersoncferreira/dotfiles/blob/min/emacs/conf.org#editing-mode
-
-   #+BEGIN_SRC emacs-lisp
-     (defun +normalize-buffer ()
-       "Delete extra whitespace, tabs -> spaces, and indent buffer"
-       (interactive)
-       (delete-trailing-whitespace)
-       (untabify (point-min) (point-max))
-       (indent-region (point-min) (point-max)))
-   #+END_SRC
-** Line wrapping
-
-   Use visual-line-mode to soft wrap lines whenever possible.
-
-   #+BEGIN_SRC emacs-lisp
-     (add-hook 'prog-mode-hook #'visual-line-mode)
-     (add-hook 'org-mode #'visual-line-mode)
-   #+END_SRC
-
-** Iedit
-
-   This package is similar to multiple-cursors but it's a bit easier to use for editing multiple regions at the same time.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package iedit
-       :ensure t
-       :after evil-leader
+   #+begin_src emacs-lisp
+     (use-package cus-edit
        :config
-       (evil-leader/set-key "r" 'iedit-mode))
-   #+END_SRC
+       (defvar prot/custom-file "~/.emacs.d/custom.el")
 
-** Command Completion
+       (setq custom-file prot/custom-file)
 
-   Use =which-key= to offer suggestions for completing a command.
+       (defun prot/cus-edit ()
+	 (let ((file prot/custom-file))
+	   (unless (file-exists-p file)
+	     (make-empty-file file))
+	   (load-file file)))
+       :hook (after-init-hook . prot/cus-edit))
+   #+end_src
 
-   #+BEGIN_SRC emacs-lisp
-     (use-package which-key
-       :ensure t
-       :diminish which-key-mode
+** Modus Themes
+
+   Use Prot's Modus Themes with his configurations.
+
+   #+begin_src emacs-lisp
+     (use-package modus-themes
+       :straight t
        :init
-       (which-key-mode)
+       (setq modus-themes-slanted-constructs t
+	     modus-themes-bold-constructs t
+	     modus-themes-fringes nil ; {nil,'subtle,'intense}
+	     modus-themes-mode-line 'moody ; {nil,'3d,'moody}
+	     modus-themes-syntax nil ; {nil,'faint,'yellow-comments,'green-strings,'yellow-comments-green-strings,'alt-syntax,'alt-syntax-yellow-comments}
+	     modus-themes-intense-hl-line nil
+	     modus-themes-paren-match 'subtle-bold ; {nil,'subtle-bold,'intense,'intense-bold}
+	     modus-themes-links 'neutral-underline ; {nil,'faint,'neutral-underline,'faint-neutral-underline,'no-underline}
+	     modus-themes-no-mixed-fonts nil
+	     modus-themes-prompts nil ; {nil,'subtle,'intense}
+	     modus-themes-completions nil ; {nil,'moderate,'opinionated}
+	     modus-themes-region 'bg-only-no-extend ; {nil,'no-extend,'bg-only,'bg-only-no-extend}
+	     modus-themes-diffs 'bg-only ; {nil,'desaturated,'fg-only,'bg-only}
+	     modus-themes-org-blocks nil ; {nil,'grayscale,'rainbow}
+	     modus-themes-headings ; Read the manual for this one
+	     '((t . nil))
+	     modus-themes-variable-pitch-headings nil
+	     modus-themes-scale-headings nil
+	     modus-themes-scale-1 1.1
+	     modus-themes-scale-2 1.15
+	     modus-themes-scale-3 1.21
+	     modus-themes-scale-4 1.27
+	     modus-themes-scale-5 1.33)
        :config
-       (which-key-add-key-based-replacements
-         "C-x p b" "persp switch buffer"
-         "SPC ," "persp switch buffer"))
-   #+END_SRC
+       ;; A simpler version of this is also in the manual.  The hook is
+       ;; triggered by `modus-themes-toggle', `modus-themes-load-operandi',
+       ;; `modus-themes-load-vivendi'.
+       (defun prot/modus-themes-custom-faces ()
+	 "Tweak faces after `modus-themes-after-load-theme-hook'."
+	 (set-face-attribute 'cursor nil
+			     :background (modus-themes-color-alts 'blue 'green-alt))
+	 (set-face-attribute 'header-line nil :inherit 'variable-pitch)
+	 (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
+	 (set-face-attribute 'mode-line nil :inherit 'variable-pitch)
+	 (set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch)
+	 (set-face-attribute 'mode-line-buffer-id nil :weight 'normal)
+	 (set-face-attribute 'line-number nil
+			     :background 'unspecified
+			     :foreground (modus-themes-color 'fg-unfocused))
+	 (set-face-attribute 'line-number-current-line nil
+			     :background 'unspecified
+			     :foreground (modus-themes-color 'red-alt-other)))
 
-** Spell Checking
+       ;; Also check my package declaration for `prot-fonts' because I use
+       ;; the `modus-themes-after-load-theme-hook' for some typeface-related
+       ;; tweaks (as those are made at the "face" level).
+       :hook ((after-init-hook . modus-themes-load-operandi)
+	      (modus-themes-after-load-theme-hook . prot/modus-themes-custom-faces))
+       :bind ("<f5>" . modus-themes-toggle))
+   #+end_src
 
-   Use =aspell= as the spell-check program for =flyspell=.
+** Fonts
 
-   #+BEGIN_SRC emacs-lisp
-     (setq ispell-program-name "/usr/local/bin/aspell")
-   #+END_SRC
+   Use Prot's font configurations.
 
-** Linting and Errors
+   #+begin_src emacs-lisp
+     (use-package prot-fonts
+       :straight (:local-repo "prot-lisp")
+       :after modus-themes                   ; Because I use its hook
+       :init
+       (setq prot-fonts-typeface-sets-alist
+	     '((laptop . (150 "Hack" "DejaVu Sans Condensed"))
+	       (desktop . (150 "Hack" "DejaVu Sans"))
+	       (reader . (170 "Iosevka Comfy" "FiraGO"))
+	       (presentation . (190 "Hack" "DejaVu Sans"))))
+       (setq prot-fonts-monospaced-list
+	     '("Hack" "DejaVu Sans Mono" "Iosevka Comfy" "Source Code Pro"
+	       "Ubuntu Mono" "Fantasque Sans Mono" "Fira Code" "Monoid"))
+       (setq prot-fonts-heights-list
+	     '(100 105 110 120 130 140 150 160 170 180 190))
+       (setq prot-fonts-line-spacing-alist
+	     '(("Source Code Pro" . 1)
+	       ("Ubuntu Mono" . 2)))
+       (setq prot-fonts-laptop-desktop-keys-list '(laptop desktop))
+       (setq prot-fonts-max-small-resolution-width 1366)
+       (setq  prot-fonts-bold-weight-alist
+	      '(("Iosevka Comfy" . semibold)
+		("Source Code Pro" . semibold)))
+       :config
+       ;; This is defined in Emacs' C code, though I feel this is a good
+       ;; place to put it.
+       (setq x-underline-at-descent-line t)
+       ;; And this just sets the right font depending on whether my laptop is
+       ;; connected to an external monitor or not.
+       (prot-fonts-fonts-per-monitor)
+       :hook ((prot-fonts-set-typeface-hook . prot-fonts-line-spacing)
+	      (prot-fonts-set-typeface-hook . prot-fonts-bold-face)
+	      ;; See theme section for this hook
+	      (modus-themes-after-load-theme-hook . prot-fonts-bold-face))
+       :bind ("C-c f" . prot-fonts-set-fonts-dwim))
+   #+end_src
+   
+** Focused Editing
 
-   =flycheck= is a good package for highlighting errors.
+   These settings (once again taken from Prot's config) enable a great reading experience for prose inside of Emacs.
 
-   Add =proselint= support.
+   #+begin_src emacs-lisp
+     (use-package face-remap :diminish buffer-face-mode)
 
-   #+BEGIN_SRC emacs-lisp
-     (use-package flycheck
-       :ensure t
+     (use-package olivetti
+       :straight t
        :diminish
        :config
-       (flycheck-define-checker proselint
-         "A linter for prose."
-         :command ("proselint" source-inplace)
-         :error-patterns
-         ((warning line-start (file-name) ":" line ":" column ": "
-                   (id (one-or-more (not (any " "))))
-                   (message (one-or-more not-newline)
-                            (zero-or-more "\n" (any " ") (one-or-more not-newline)))
-                   line-end))
-         :modes (text-mode markdown-mode gfm-mode org-mode))
-       (add-to-list 'flycheck-checkers 'proselint))
-   #+END_SRC
+       (setq olivetti-body-width 0.7)
+       (setq olivetti-minimum-body-width 80)
+       (setq olivetti-recall-visual-line-mode-entry-state t))
 
-** Plain Text
+     (use-package prot-logos
+       :straight (:type built-in)
+       :diminish visual-line-mode
+       :config
+       (setq prot-logos-org-presentation nil)
+       (setq prot-logos-scroll-lock nil)
+       (setq prot-logos-hidden-modeline nil)
+       :bind ("<f9>" . prot-logos-focus-mode))
+   #+end_src
 
-   Use =flycheck= in the appropriate modes for editing plain text.
+** Mode line
+   
+   Use the default modeline for speed even though it's a bit ugly.
 
-   #+BEGIN_SRC emacs-lisp
-     (add-hook 'markdown-mode-hook #'flycheck-mode)
-     (add-hook 'gfm-mode-hook #'flycheck-mode)
-     (add-hook 'text-mode-hook #'flycheck-mode)
-     (add-hook 'org-mode-hook #'flycheck-mode)
-   #+END_SRC
-
-   Catch common writing mistakes.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package writegood-mode
-       :ensure t
-       :hook ((markdown-mode . writegood-mode)
-              (tex-mode . writegood-mode)
-              (text-mode . writegood-mode)
-              (org-mode . writegood-mode)))
-   #+END_SRC
-
-* UI Settings
-** Theme
-
-   I like Doom Themes, especially Nord.
-
-   #+BEGIN_SRC emacs-lisp
-  (use-package doom-themes
-         :ensure t
-         :init (load-theme 'doom-nord t))
-   #+END_SRC
-** Font
-
-   Use 14 pt font.
-
-   #+BEGIN_SRC emacs-lisp
-     (set-face-attribute 'default nil :height 140)
-   #+END_SRC
-
-   Set the font to Fira Code and use ligatures.
-
-   Source: https://github.com/jming422/fira-code-mode/blob/master/fira-code-mode.el
-
-   #+BEGIN_SRC emacs-lisp
-     (defun fira-code-mode--make-alist (list)
-       "Generate prettify-symbols alist from LIST."
-       (let ((idx -1))
-         (delete nil
-                 (mapcar
-                  (lambda (s)
-                    (setq idx (1+ idx))
-                    (when s
-                      (let* ((code (+ #Xe100 idx))
-                             (width (string-width s))
-                             (prefix ())
-                             (suffix '(?\s (Br . Br)))
-                             (n 1))
-                        (while (< n width)
-                          (setq prefix (append prefix '(?\s (Br . Bl))))
-                          (setq n (1+ n)))
-                        (cons s (append prefix suffix
-                                        (list (decode-char 'ucs code)))))))
-                  list))))
-
-     (defconst fira-code-mode--ligatures
-       '(nil ;;"www"
-         "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-"
-         nil ;;"[]"
-         "::" ":::" ":=" "!!" "!=" "!==" "-}"
-         "--" "---" "-->" "->" "->>" "-<" "-<<" "-~"
-         nil ;;"#{"
-         "#[" "##" "###" "####"
-         nil ;;"#("
-         "#?"
-         nil nil ;;"#_" "#_("
-         ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*"
-         "/**" "/=" "/==" "/>" "//" "///" "&&" "||" "||="
-         "|=" "|>" "^=" "$>" "++" "+++" "+>" "=:=" "=="
-         "===" "==>" "=>" "=>>" "<=" "=<<" "=/=" ">-" ">="
-         ">=>" ">>" ">>-" ">>=" ">>>" "<*" "<*>" "<|" "<|>"
-         "<$" "<$>" "<!--" "<-" "<--" "<->" "<+" "<+>" "<="
-         "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<" "<~"
-         "<~~" "</" "</>" "~@" "~-" "~=" "~>" "~~" "~~>" "%%"
-         nil ;;"x"
-         ":" "+" "+" "*"))
-
-     (defvar fira-code-mode--old-prettify-alist)
-
-     (defun fira-code-mode--enable ()
-       "Enable Fira Code ligatures in current buffer."
-       (setq-local fira-code-mode--old-prettify-alist prettify-symbols-alist)
-       (setq-local prettify-symbols-alist
-                   (append (fira-code-mode--make-alist fira-code-mode--ligatures)
-                           fira-code-mode--old-prettify-alist))
-       (prettify-symbols-mode t))
-
-     (defun fira-code-mode--disable ()
-       "Disable Fira Code ligatures in current buffer."
-       (setq-local prettify-symbols-alist fira-code-mode--old-prettify-alist)
-       (prettify-symbols-mode -1))
-
-     (define-minor-mode fira-code-mode
-       "Fira Code ligatures minor mode"
-       :lighter " Fira"
-       (setq-local prettify-symbols-unprettify-at-point 'right-edge)
-       (if fira-code-mode
-           (fira-code-mode--enable)
-         (fira-code-mode--disable)))
-
-     (defun fira-code-mode--setup ()
-       "Setup Fira Code Symbols."
-       (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol"))
-
-     (provide 'fira-code-mode)
-   #+END_SRC
-
-** Window Settings
-
-   Hide the scroll, tool, and menu bars.
-
-   #+BEGIN_SRC emacs-lisp
-     (if window-system (scroll-bar-mode -1))
-     (tool-bar-mode 0)
-   #+END_SRC
-
-   Start in full-screen.
-
-   #+BEGIN_SRC emacs-lisp
-     (if (eq window-system 'ns)
-         (toggle-frame-maximized)
-       (toggle-frame-fullscreen))
-   #+END_SRC
-
-   Set the theme as a "safe theme".
-
-   #+BEGIN_SRC emacs-lisp
-     (setq custom-safe-themes t)
-   #+END_SRC
-
-   Make the titlebar dark on macOS.
-
-   Source: [[https://huytd.github.io/emacs-from-scratch.html#orge3a802f][Emacs from scratch]]
-
-   #+BEGIN_SRC emacs-lisp
-     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-     (add-to-list 'default-frame-alist '(ns-appearance . dark))
-     (setq ns-use-proxy-icon  nil)
-     (setq frame-title-format nil)
-   #+END_SRC
-
-   Center the cursor while scrolling.
-
-   Source: [[https://two-wrongs.com/centered-cursor-mode-in-vanilla-emacs.html][Two Wrongs]]
-
-   #+BEGIN_SRC emacs-lisp
-     (setq scroll-preserve-screen-position t
-           scroll-conservatively 0
-           maximum-scroll-margin 0.5
-           scroll-margin 99999)
-   #+END_SRC
-
-** Startup Screen
-
-   Remove the startup screen. It gets annoying after a while.
-
-   #+BEGIN_SRC emacs-lisp
-     (setq-default inhibit-startup-screen t)
-   #+END_SRC
-
-** Modeline
-
-   Doom Modeline looks great.
-
-   #+BEGIN_SRC emacs-lisp
-(use-package doom-modeline
-      :ensure t
-      :hook (after-init . doom-modeline-init)
-      :config
-      (setq doom-modeline-height 20)
-      (setq doom-modeline-major-mode-icon t)
-      (setq doom-modeline-buffer-file-name-style 'truncate-upto-project))
-   #+END_SRC
-
-   Add column numbers to the modeline.
-
-   #+BEGIN_SRC emacs-lisp
-     (column-number-mode t)
-   #+END_SRC
-
-** Line Settings
-
-   Highlight the current line.
-
-   #+BEGIN_SRC emacs-lisp
-     (when window-system
-       (global-hl-line-mode))
-   #+END_SRC
-
-   Show fringe indicators as curly arrows.
-
-   #+BEGIN_SRC emacs-lisp
-     (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
-   #+END_SRC
-
-   Indicate empty lines.
-
-   #+BEGIN_SRC emacs-lisp
-     (setq-default indicate-empty-lines t)
-   #+END_SRC
-* Code
-** Manage Projects
-
-   =projectile= is nice for managing projects.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package projectile
-       :ensure t
-       :diminish projectile-mode
+   #+begin_src emacs-lisp
+     (use-package emacs
        :init
-       (projectile-mode 1)
+       (setq mode-line-percent-position '(-3 "%p"))
+       (setq mode-line-position-column-line-format '(" %l,%c")) ; Emacs 28
+       (setq mode-line-defining-kbd-macro
+             (propertize " Macro" 'face 'mode-line-emphasis))
+
+       ;; Remove recursion indicators
+       ;; REVIEW: maybe there is a cleaner way to handle this
+       (setq mode-line-modes
+             (list
+              "("
+              `(:propertize ("" mode-name)
+                            help-echo "Major mode\n\
+     mouse-1: Display major mode menu\n\
+     mouse-2: Show help for major mode\n\
+     mouse-3: Toggle minor modes"
+                            mouse-face mode-line-highlight
+                            local-map ,mode-line-major-mode-keymap)
+              '("" mode-line-process)
+              (propertize "%n" 'help-echo "mouse-2: Remove narrowing from buffer"
+                          'mouse-face 'mode-line-highlight
+                          'local-map (make-mode-line-mouse-map
+                                      'mouse-2 #'mode-line-widen))
+              ")"
+              " "))
+
+       (setq-default mode-line-format
+                     '("%e"
+                       mode-line-front-space
+                       mode-line-mule-info
+                       mode-line-client
+                       mode-line-modified
+                       mode-line-remote
+                       mode-line-frame-identification
+                       mode-line-buffer-identification
+                       "  "
+                       mode-line-position
+                       (vc-mode vc-mode)
+                       "  "
+                       mode-line-modes
+                       " "
+                       mode-line-misc-info
+                       mode-line-end-spaces)))
+
+     ;; Include the time in the mode-line
+     (use-package time
+       :commands world-clock
        :config
-       (setq projectile-enable-caching nil)
-       (add-to-list 'projectile-globally-ignored-directories "*.cquery_cached_index")
-       (add-to-list 'projectile-globally-ignored-directories "*node_modules"))
-   #+END_SRC
+       (setq display-time-format "%H:%M  %Y-%m-%d")
+       ;;;; Covered by `display-time-format'
+       ;; (setq display-time-24hr-format t)
+       ;; (setq display-time-day-and-date t)
+       (setq display-time-interval 60)
+       (setq display-time-mail-directory nil)
+       (setq display-time-default-load-average nil)
 
-   #+BEGIN_SRC emacs-lisp
-     (use-package counsel-projectile
-       :ensure t
+       ;;; World clock
+       (setq zoneinfo-style-world-list
+             '(("America/Los_Angeles" "Los Angeles")
+               ("America/New_York" "New York")
+               ("Europe/Brussels" "Brussels")
+               ("Asia/Shanghai" "Shanghai")
+               ("Asia/Tokyo" "Tokyo")))
+
+       ;; All of the following variables are for Emacs 28
+       (setq world-clock-list t)
+       (setq world-clock-time-format "%R %z  %A %d %B")
+       (setq world-clock-buffer-name "*world-clock*") ; Placement handled by
+                                             ; `display-buffer-alist'
+       (setq world-clock-timer-enable t)
+       (setq world-clock-timer-second 60)
+
+       :hook (after-init-hook . display-time-mode))
+   #+end_src
+
+   #+begin_src emacs-lisp
+   (use-package moody
+     :straight t
+     :after (prot-fonts             ; we need its hook
+             prot-simple)           ; provides `prot-simple--number-even-p'
+     :config
+     (moody-replace-mode-line-buffer-identification)
+     (moody-replace-vc-mode)
+     (setq x-underline-at-descent-line t)
+
+     (defun prot/moody--height ()
+       "Set Moody height to an even number.
+   Bind this to a hook that gets called after loading/changing the
+   mode line's typeface (or the default one if they are the same)."
+       (let* ((font (face-font 'mode-line))
+              (height (truncate (* 2 (aref (font-info font) 2))))
+              (height-even (if (prot-common-number-even-p height) height (+ height 1))))
+         (if font
+             height-even
+           24)))
+           
+     (defun prot/moody--mode-line-height ()
+       "Set Moody height to the value of `prot/moody--height'."
+       (setq moody-mode-line-height (funcall 'prot/moody--height)))
+
+     :hook (prot-fonts-set-typeface-hook . prot/moody--mode-line-height))
+   #+end_src
+  
+
+   Use the mode line to show the keys being pressed and the command they call.
+
+   #+begin_src emacs-lisp
+     (use-package keycast
+       :straight t
+       :after moody
+       :commands keycast-mode
        :config
-       (counsel-projectile-mode)
-       (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-   #+END_SRC
-** General Settings
-*** Indentation
-    Indent by four spaces by default.
+       (setq keycast-window-predicate 'moody-window-active-p)
+       (setq keycast-separator-width 1)
+       (setq keycast-insert-after 'mode-line-buffer-identification)
+       (setq keycast-remove-tail-elements nil)
 
-    #+BEGIN_SRC emacs-lisp
-     (setq-default tab-width 4)
-     (setq-default indent-tabs-mode nil)
-    #+END_SRC
+       (dolist (input '(self-insert-command
+            org-self-insert-command))
+     (add-to-list 'keycast-substitute-alist `(,input "." "Typing…")))
 
-    Automatically indent with the return key.
+       ;;; TODO identify all events that should be excluded
+       ;; mouse-set-point
+       ;; mouse-set-region
+       ;; mouse-drag-secondary
+       ;; mouse-drag-line
+       ;; mouse-drag-drag
+       ;; mouse-start-end
+       ;; mouse-drag-region nil
+       ;; mouse-drag-track nil
+       ;; mouse-drag-region-rectangle
+       ;; mouse-drag-and-drop-region
+       ;; mwheel-event-button
+       ;; dframe-mouse-event-p
+       ;; mouse-drag-events-are-point-events-p
 
-    #+BEGIN_SRC emacs-lisp
-     (define-key global-map (kbd "RET") 'newline-and-indent)
-    #+END_SRC
-*** Parentheses
-    Show parenthesis highlighting.
+       (dolist (event '(mouse-event-p
+            mouse-movement-p
+            mwheel-scroll))
+     (add-to-list 'keycast-substitute-alist `(,event nil))))
+   #+end_src
 
-    #+BEGIN_SRC emacs-lisp
-     (show-paren-mode 1)
-    #+END_SRC
+** Window borders
 
-    Change the color of delimiters in programming modes.
-
-    #+BEGIN_SRC emacs-lisp
-     (use-package rainbow-delimiters
-       :ensure t
+   #+begin_src emacs-lisp
+     (use-package emacs
        :config
-       (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
-    #+END_SRC
+       (setq window-divider-default-right-width 1)
+       (setq window-divider-default-bottom-width 1)
+       (setq window-divider-default-places 'right-only)
+       :hook (after-init-hook . window-divider-mode))
+   #+end_src
 
-    Use =smartparens= as a =paredit= alternative.
+** Fringe
 
-    #+BEGIN_SRC emacs-lisp
-     (use-package smartparens
-       :ensure t
+   #+begin_src emacs-lisp
+     (use-package fringe
+       :config
+       (fringe-mode nil)
+       (setq-default fringes-outside-margins nil)
+       (setq-default indicate-buffer-boundaries nil)
+       (setq-default indicate-empty-lines nil)
+       (setq-default overflow-newline-into-fringe t))
+   #+end_src
+   
+   Highlight changes to the current buffer.
+
+   #+begin_src emacs-lisp
+     (use-package diff-hl
+       :straight t
+       :after vc
+       :config
+       (setq diff-hl-draw-borders nil)
+       (setq diff-hl-side 'left)
+       :hook (after-init-hook . global-diff-hl-mode))
+   #+end_src
+
+* Performance
+
+** Long lines
+
+   Increase performance for larger files.
+
+   #+begin_src emacs-lisp
+     (use-package emacs
+       :config
+       (setq-default bidi-paragraph-direction 'left-to-right)
+       (setq bidi-inhibit-bpa t))
+
+     (use-package so-long
+       :config
+       (global-so-long-mode 1))
+   #+end_src
+
+* Completion
+
+  Source: [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/emacs-init.org][Prot's dotfiles]].
+   
+** Fuzzy Completion
+
+   #+begin_quote
+   It provides the =orderless= completion style for
+   efficient out-of-order grouped pattern matching.  The components can be
+   determined using several styles, such as regexp, flex, prefix,
+   initialism (check its README because there are lots of variations).
+   Delimiters are literal spaces by default, but can be configured to match
+   other characters, with hyphens and slashes being likely choices.  As
+   such, Orderless can supersede---and for most cases improve upon---the
+   completion styles that come built into Emacs, adding to them the
+   powerful out-of-order capability.
+
+   The =prot-orderless.el= contains the few tweaks I introduce (full code
+   further below).  In particular, it defines two style dispatchers.  Those
+   are single characters that acquire a special meaning while at the end of
+   a given input.  With the equals sign appended to a sequence of
+   characters, we call =prot-orderless-literal-dispatcher= which instructs
+   orderless to match that sequence as a literal string.  While a comma
+   reads it as an initialism, per =prot-orderless-initialism-dispatcher=.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package prot-orderless
+       :straight (:type built-in)
+       :demand)
+
+     (use-package orderless
+       :straight t
+       :demand
+       :after prot-orderless
+       :config
+       (setq orderless-component-separator " +")
+       (setq orderless-matching-styles
+         '(orderless-flex
+           orderless-strict-leading-initialism
+           orderless-regexp
+           orderless-prefixes
+           orderless-literal))
+       (setq orderless-style-dispatchers
+         '(prot-orderless-literal-dispatcher
+           prot-orderless-initialism-dispatcher))
+       ;; SPC should never complete: use it for `orderless' groups.
+       :bind (:map minibuffer-local-completion-map
+           ("SPC" . nil)))
+   #+end_src
+
+** Minibuffer completion
+
+   #+begin_quote
+   The code block below is specifically about the minibuffer setup.  *This
+   does not cover the visualisation of completion candidates*, which is
+   handled by Icomplete---those are defined in the next section about
+   [[#h:b6b13f4f-91f5-416d-9934-b51b4d87770c][Icomplete configurations and extras]].
+
+   Here is an overview of the settings covered herein:
+
+   + Completion styles :: I mostly rely on [[#h:7b1374dd-6b1f-4548-8fbf-1034230c80e0][the Orderless completion style]].
+     An exception is a niche functionality of the =partial-completion= style
+     (built-in): with it you can navigate to a filesystem path like
+     =~/.l/s/fo= for =~/.local/share/fonts=.  So my recommendation is to use
+     those two styles to cover every case.
+
+   + Recursive minibuffers :: I enable recursive minibuffers.  This
+     practically means that you can start something in the minibuffer,
+     switch to another window, call the minibuffer again, run some
+     commands, and then move back to what you initiated in the original
+     minibuffer.  To exit, hit =C-]= (=abort-recursive-edit=), though the
+     regular =C-g= should also do the trick.
+
+     The =minibuffer-depth-indicate-mode= will show a depth indicator,
+     represented as a number, next to the minibuffer prompt, if a recursive
+     edit is in progress.
+
+   + Key bindings :: Note the nuances in the behaviour between =RET= and =C-j=.
+     With the Return key, we instruct the minibuffer to expand the current
+     candidate and then exit the session, if possible.  Whereas =C-j= is
+     meant to insert the minibuffer's contents exactly as they are and exit
+     immediately.  You need the latter in cases where you want =foo= but the
+     match is for =foobar=.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package prot-minibuffer
+       :straight (:type built-in)
+       :demand
+       :bind (("M-X" . prot-minibuffer-mode-commands)
+          ("s-v" . prot-minibuffer-focus-mini-or-completions)
+          :map completion-list-mode-map
+          ("M-v" . prot-minibuffer-focus-mini)
+          ("h" . prot-simple-describe-symbol) ; from `prot-simple.el'
+          ;; Those are generic actions for the "*Completions*" buffer.  I
+          ;; normally use `embark' and its own buffers.
+          ("w" . prot-minibuffer-completions-kill-symbol-at-point)
+          ("i" . prot-minibuffer-completions-insert-symbol-at-point)
+          ("j" . prot-minibuffer-completions-insert-symbol-at-point-exit))
+       :hook (minibuffer-setup-hook . prot-minibuffer-mini-cursor))
+
+     (use-package minibuffer
+       :demand
+       :after prot-minibuffer
+       :config
+       (setq completion-styles '(orderless partial-completion))
+       (setq completion-category-defaults nil)
+       (setq completion-cycle-threshold 3)
+       (setq completion-flex-nospace nil)
+       (setq completion-pcm-complete-word-inserts-delimiters t)
+       (setq completion-pcm-word-delimiters "-_./:| ")
+       (setq completion-show-help nil)
+       (setq completion-ignore-case t)
+
+       ;; The following two are updated in Emacs 28.  They concern the
+       ;; *Completions* buffer.
+       (setq completions-format 'one-column)
+       (setq completions-detailed t)
+
+       (setq read-buffer-completion-ignore-case t)
+       (setq read-file-name-completion-ignore-case t)
+
+       (setq enable-recursive-minibuffers t)
+       (setq read-answer-short t)
+       (setq resize-mini-windows t)
+       (setq minibuffer-eldef-shorten-default t)
+
+       (file-name-shadow-mode 1)
+       (minibuffer-depth-indicate-mode 1)
+       (minibuffer-electric-default-mode 1)
+
+       ;; Defines, among others, aliases for common minibuffer commands to
+       ;; Super-KEY.  Normally these should go in individual package
+       ;; declarations, but their grouping here makes things easier to
+       ;; understand.  Besides, they are related to the minibuffer.
+       :bind (("s-b" . switch-to-buffer)
+          ("s-B" . switch-to-buffer-other-window)
+          ("s-f" . find-file)
+          ("s-F" . find-file-other-window)
+          ("s-d" . dired)
+          ("s-D" . dired-other-window)
+          :map minibuffer-local-completion-map
+          ("<return>" . minibuffer-force-complete-and-exit) ; exit with completion
+          ("C-j" . exit-minibuffer)      ; force input unconditionally
+          :map completion-list-mode-map
+          ("n" . next-line)
+          ("p" . previous-line)
+          ("f" . next-completion)
+          ("b" . previous-completion)))
+   #+end_src
+
+** Icomplete configuration
+
+   #+begin_quote
+   The following package declaration is for the built-in interactive
+   minibuffer-based completion interface: =icomplete=.  Remember that the
+   underlying completion mechanisms are handled by the minibuffer
+   itself
+   #+end_quote
+ 
+   #+begin_src emacs-lisp
+     (use-package prot-icomplete
+       :straight (:type built-in)
+       :demand
+       :config
+       ;; Only use this if you do not want `embark'
+       (prot-icomplete-actions -1)
+
+       ;; Hooks' syntax is controlled by the `use-package-hook-name-suffix'
+       ;; variable.  The "-hook" suffix is intentional.
+       :hook (icomplete-minibuffer-setup-hook . prot-icomplete-truncate))
+
+     (use-package icomplete
+       :demand
+       :after prot-minibuffer
+       :config
+       (setq icomplete-delay-completions-threshold 100)
+       (setq icomplete-max-delay-chars 2)
+       (setq icomplete-compute-delay 0.2)
+       (setq icomplete-show-matches-on-no-input t)
+       (setq icomplete-hide-common-prefix nil)
+       (setq icomplete-prospects-height 1)
+       (setq icomplete-separator (propertize " · " 'face 'shadow))
+       ;; (setq icomplete-separator " │ ")
+       ;; (setq icomplete-separator " ┆ ")
+       ;; (setq icomplete-separator " ¦ ")
+       ;; (setq icomplete-separator " ┆ ")
+       (setq icomplete-with-completion-tables t)
+       (setq icomplete-tidy-shadowed-file-names t)
+
+       (fido-mode -1)                        ; Emacs 27.1
+       (icomplete-mode 1)
+
+       :bind (:map icomplete-minibuffer-map
+           ("C-," . nil)             ; disable defaults
+           ("C-." . nil)             ; same
+           ("<tab>" . icomplete-force-complete)
+           ("<return>" . icomplete-force-complete-and-exit) ; exit with completion
+           ("C-j" . exit-minibuffer) ; force input unconditionally
+           ("C-n" . icomplete-forward-completions)
+           ("<right>" . icomplete-forward-completions)
+           ("<down>" . icomplete-forward-completions)
+           ("C-p" . icomplete-backward-completions)
+           ("<left>" . icomplete-backward-completions)
+           ("<up>" . icomplete-backward-completions)
+           ;; The following command is from Emacs 27.1
+           ("<C-backspace>" . icomplete-fido-backward-updir)))
+   #+end_src
+
+** Vertical completion
+
+   #+begin_quote
+   Icomplete displays its list horizontally by default.  This is how I like
+   it for many cases, because the candidates are often short and I do not
+   want to have the window layout undergo any mutations in size as the
+   minibuffer expands and contracts.  A horizontal, one-line-tall Icomplete
+   is okay.
+
+   There are, however, cases where verticality provides a genuine usability
+   boost: when the candidates are naturally long.  To that end I set the
+   helper function =icomplete-vertical-toggle= to a convenient key binding
+   inside the minibuffer.  I invoke the toggle whenever the need arises.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package icomplete-vertical
+       :straight (:host github :repo "oantolin/icomplete-vertical" :branch "master")
+       :after (minibuffer icomplete)
+       :config
+       (setq icomplete-vertical-prospects-height (/ (frame-height) 6))
+       (icomplete-vertical-mode -1)
+       :bind (:map icomplete-minibuffer-map
+           ("C-v" . icomplete-vertical-toggle)))
+   #+end_src
+** Completion annotations
+
+   #+begin_quote
+   This is a utility jointly developed by Daniel Mendler and Omar Antolín
+   Camarena that provides annotations to completion candidates.  It is
+   meant to be a framework-agnostic tool, so it works nicely with Consult,
+   Icomplete vertical, and Embark.
+   #+end_quote
+    
+   #+begin_src emacs-lisp
+     (use-package marginalia
+       :straight (:host github :repo "minad/marginalia" :branch "main")
+       :demand
+       :config
+       (marginalia-mode)
+       (setq marginalia-annotators '(marginalia-annotators-heavy
+                     marginalia-annotators-light))
+       :bind (:map minibuffer-local-completion-map
+           ("C-i" . marginalia-cycle-annotators)))
+   #+end_src
+** Enhanced minibuffer commands
+
+   #+begin_quote
+   Daniel Mendler's Consult is a new entry to the ecosystem of small,
+   modular tools that work with the standard Emacs completion framework.
+   It provides enhanced versions of several common commands, like
+   =switch-to-buffer=, while it offers useful functionality, such as the
+   ability to visualise---and revisit---items in the mark ring.
+
+   While this section in a work-in-progress, note that my =prot-consult.el=
+   defines some quick and dirty extensions that add minor visual feedback
+   to the various jump actions that Consult makes possible.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     ;; TODO: configure pattern-matching on a per-command basis
+     (use-package consult
+       :straight (:host github :repo "minad/consult" :branch "master")
+       :config
+       (setq consult-line-numbers-widen t)
+       (setq consult-preview-buffer nil)
+       (setq consult-preview-mark t)
+       (setq consult-preview-line t)
+       (setq consult-preview-outline nil)
+       (setq completion-in-region-function #'consult-completion-in-region)
+       (consult-preview-mode 1)
+       :bind (("M-s s" . consult-outline)
+          ("M-s M-s" . consult-outline)
+          ("M-s m" . consult-mark)
+          ("M-s l" . consult-line)
+          ("M-s M-." . consult-line-symbol-at-point)
+          :map minibuffer-local-completion-map
+          ("<tab>" . minibuffer-force-complete)))
+
+     (use-package prot-consult
+       :straight (:type built-in)
+       :after prot-pulse
+       :config
+       (setq prot-consult-add-advice-set-hooks t)
+       (setq prot-consult-command-centre-list '(consult-line consult-mark))
+       (setq prot-consult-command-top-list '(consult-outline))
+
+       (prot-consult-set-up-hooks-mode 1))
+   #+end_src
+** Imenu
+
+   #+begin_quote
+   =imenu.el= is a built-in library that constructs an index of buffer
+   positions pointing to semantically relevant constructs.  With =M-x imenu=
+   it displays the list through a completion interface.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package imenu
+       :config
+       (setq imenu-use-markers t)
+       (setq imenu-auto-rescan t)
+       (setq imenu-auto-rescan-maxout 600000)
+       (setq imenu-max-item-length 100)
+       (setq imenu-use-popup-menu nil)
+       (setq imenu-eager-completion-buffer t)
+       (setq imenu-space-replacement " ")
+       (setq imenu-level-separator "/")
+       :after prot-pulse
+       :hook ((imenu-after-jump-hook . prot-pulse-recentre-top)
+          (imenu-after-jump-hook . prot-pulse-show-entry)))
+   #+end_src
+
+   #+begin_quote
+   This package offers a global and a local minor mode for flattening the
+   index of =imenu=.  By default Imenu produces a multi-level index, where
+   appropriate.
+
+   By enabling the =flimenu-global-mode= we get a flat list for the
+   completion-based interaction with =imenu=.  Now we can just search
+   directly for any item on the list.
+
+   To make things even better, we can still access the fully fledged tree
+   presentation of =imenu-list=, as it operates independently.
+   #+end_quote
+
+
+   #+begin_src emacs-lisp
+     (use-package flimenu
+       :straight t
+       :after imenu
+       :config
+       (flimenu-global-mode 1))
+   #+end_src
+
+** Projects
+
+   I guess there's no longer any need to use Projectile...
+
+   #+begin_src emacs-lisp
+     (use-package project
+       :demand
+       :init
+       (setq project-switch-commands
+         '((?f "File" project-find-file)
+           (?s "Subdir" prot-project-find-subdir)
+           (?g "Grep" project-find-regexp)
+           (?d "Dired" project-dired)
+           (?b "Buffer" project-switch-to-buffer)
+           (?q "Query replace" project-query-replace-regexp)
+           (?t "Tag switch" prot-project-retrieve-tag)
+           (?m "Magit" prot-project-magit-status)
+           (?v "VC dir" project-vc-dir)
+           (?l "Log VC" prot-project-commit-log)
+           (?e "Eshell" project-eshell)))
+       :bind ("C-x p q" . project-query-replace-regexp)) ; C-x p is `project-prefix-map'
+
+     (use-package prot-project
+       :straight (:type built-in)
+       :demand
+       :init
+       (setq prot-project-project-roots '("~/Git/Projects/" "~/Git/build/"))
+       (setq prot-project-commit-log-limit 25)
+       (setq prot-project-large-file-lines 1000)
+       :bind (("C-x p <delete>" . prot-project-remove-project)
+          ("C-x p l" . prot-project-commit-log)
+          ("C-x p m" . prot-project-magit-status)
+          ("C-x p s" . prot-project-find-subdir)
+          ("C-x p t" . prot-project-retrieve-tag)))
+   #+end_src
+** Recent Files
+    
+   #+begin_src emacs-lisp
+     (use-package recentf
+       :config
+       (setq recentf-save-file "~/.emacs.d/recentf")
+       (setq recentf-max-saved-items 200)
+       (setq recentf-exclude '(".gz" ".xz" ".zip" "/elpa/" "/ssh:" "/sudo:"))
+       :hook (after-init-hook . recentf-mode))
+   #+end_src
+
+** Isearch
+    
+   #+begin_src emacs-lisp
+     (use-package isearch
        :diminish
-       :init
-       (require 'smartparens-config)
-       (smartparens-global-mode 1)
-       (sp-use-paredit-bindings)
        :config
-       (defun my-create-newline-and-enter-sexp (&rest _ignored)
-         "Open a new brace or bracket expression, with relevant newlines and indent. "
-         (newline)
-         (indent-according-to-mode)
-         (forward-line -1)
-         (indent-according-to-mode))
-       (setq sp-escape-quotes-after-insert nil)
-       (sp-local-pair 'c++-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
-       (sp-local-pair 'c-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
-       (sp-local-pair 'java-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
-       (sp-local-pair 'web-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
-       (sp-local-pair 'typescript-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET")))
-       (sp-local-pair 'js-mode "{" nil :post-handlers '((my-create-newline-and-enter-sexp "RET"))))
-    #+END_SRC
+       (setq search-highlight t)
+       (setq search-whitespace-regexp ".*?")
+       (setq isearch-lax-whitespace t)
+       (setq isearch-regexp-lax-whitespace nil)
+       (setq isearch-lazy-highlight t)
+       ;; All of the following variables were introduced in Emacs 27.1.
+       (setq isearch-lazy-count t)
+       (setq lazy-count-prefix-format nil)
+       (setq lazy-count-suffix-format " (%s/%s)")
+       (setq isearch-yank-on-move 'shift)
+       (setq isearch-allow-scroll 'unlimited)
+       :bind (:map minibuffer-local-isearch-map
+          ("M-/" . isearch-complete-edit)
+          :map isearch-mode-map
+          ("C-g" . isearch-cancel)       ; instead of `isearch-abort'
+          ("M-/" . isearch-complete)))
+   #+end_src
 
-*** Git Integration
+** Ripgrep for faster completions
 
-    Magit is a fantastic git experience.
+   #+begin_src emacs-lisp
+     (use-package rg
+       :straight t
+       :config
+       (setq rg-group-result t)
+       (setq rg-hide-command t)
+       (setq rg-show-columns nil)
+       (setq rg-show-header t)
+       (setq rg-custom-type-aliases nil)
+       (setq rg-default-alias-fallback "all")
 
-    - Bring up the status menu with =C-x g=.
-    - Use =evil= keybindings.
-    - Highlight commit text in the summary that goes over 50 characters.
-    - Enable spellchecking when writing commit messages.
-    - Start in insert mode when writing a commit message.
+       (rg-define-search prot/rg-vc-or-dir
+     "RipGrep in project root or present directory."
+     :query ask
+     :format regexp
+     :files "everything"
+     :dir (or (vc-root-dir)              ; search root project dir
+          default-directory)         ; or from the current dir
+     :confirm prefix
+     :flags ("--hidden -g !.git"))
 
-      #+BEGIN_SRC emacs-lisp
-         (use-package magit
-           :ensure t
-           :bind ("C-x g" . magit-status)
-           :config
-           (use-package evil-magit)
-           (setq git-commit-summary-max-length 50)
-           (add-hook 'git-commit-mode-hook 'turn-on-flyspell)
-           (add-hook 'with-editor-mode-hook 'evil-insert-state))
-      #+END_SRC
-*** Annotation Highlighting
+       (rg-define-search prot/rg-ref-in-dir
+     "RipGrep for thing at point in present directory."
+     :query point
+     :format regexp
+     :files "everything"
+     :dir default-directory
+     :confirm prefix
+     :flags ("--hidden -g !.git"))
 
-    Highlight annotations in code.
+       (defun prot/rg-save-search-as-name ()
+     "Save `rg' buffer, naming it after the current search query.
 
-    #+BEGIN_SRC emacs-lisp
-      (use-package hl-todo
-        :ensure t
-        :init
-        (global-hl-todo-mode))
-    #+END_SRC
-*** Autocomplete
+     This function is meant to be mapped to a key in `rg-mode-map'."
+     (interactive)
+     (let ((pattern (car rg-pattern-history)))
+       (rg-save-search-as-name (concat "«" pattern "»"))))
 
-    Company is a solid completion engine for Emacs.
+       :bind (("M-s g" . prot/rg-vc-or-dir)
+          ("M-s r" . prot/rg-ref-in-dir)
+          :map rg-mode-map
+          ("s" . prot/rg-save-search-as-name)
+          ("C-n" . next-line)
+          ("C-p" . previous-line)
+          ("M-n" . rg-next-file)
+          ("M-p" . rg-prev-file)))
+   #+end_src
+    
+** Cross-references
 
-    #+BEGIN_SRC emacs-lisp
-      (use-package company
-        :ensure t
-        :hook (prog-mode . company-mode)
-        :init
-        (setq company-minimum-prefix-length 2
-              company-tooltip-limit 14
-              company-dabbrev-downcase nil
-              company-dabbrev-ignore-case nil
-              company-dabbrev-code-other-buffers t
-              company-tooltip-align-annotations t
-              company-require-match 'never
-              company-global-modes
-              '(not erc-mode message-mode help-mode gud-mode eshell-mode)
-              company-backends '(company-capf)
-              company-frontends
-              '(company-pseudo-tooltip-frontend
-                company-echo-metadata-frontend)))
-    #+END_SRC
+   #+begin_quote
+   Xref provides helpful commands for code navigation and discovery, such
+   as =xref-find-definitions= (=M-.=) and its counterpart
+   =xref-pop-marker-stack= (=M-,=).
+   #+end_quote
 
-** Programming Languages
+   #+begin_src emacs-lisp
+     (use-package xref
+       :config
+       (setq xref-show-definitions-function #'xref--show-defs-minibuffer)
+       (setq xref-search-program 'ripgrep))  ; Emacs 28
+   #+end_src
+* Buffers
+  
+  Source: [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/emacs-init.org][Prot's dotfiles]].
+
+** Ibuffer
+
+   #+begin_src emacs-lisp
+     (use-package ibuffer
+       :config
+       (setq ibuffer-expert t)
+       (setq ibuffer-display-summary nil)
+       (setq ibuffer-use-other-window nil)
+       (setq ibuffer-show-empty-filter-groups nil)
+       (setq ibuffer-movement-cycle nil)
+       (setq ibuffer-default-sorting-mode 'filename/process)
+       (setq ibuffer-use-header-line t)
+       (setq ibuffer-default-shrink-to-minimum-size nil)
+       (setq ibuffer-formats
+         '((mark modified read-only locked " "
+             (name 30 30 :left :elide)
+             " "
+             (size 9 -1 :right)
+             " "
+             (mode 16 16 :left :elide)
+             " " filename-and-process)
+           (mark " "
+             (name 16 -1)
+             " " filename)))
+       (setq ibuffer-saved-filter-groups nil)
+       (setq ibuffer-old-time 48)
+       :hook (ibuffer-mode-hook . hl-line-mode)
+       :bind (("C-x C-b" . ibuffer)
+          :map ibuffer-mode-map
+          ("* f" . ibuffer-mark-by-file-name-regexp)
+          ("* g" . ibuffer-mark-by-content-regexp) ; "g" is for "grep"
+          ("* n" . ibuffer-mark-by-name-regexp)
+          ("s n" . ibuffer-do-sort-by-alphabetic)  ; "sort name" mnemonic
+          ("/ g" . ibuffer-filter-by-content)))
+
+     (use-package prot-ibuffer
+       :straight (:type built-in)
+       :bind (("M-s b" . prot-ibuffer-buffers-major-mode)
+          ("M-s v" . prot-ibuffer-buffers-vc-root)))
+   #+end_src
+
+** Scratch buffers
+
+   #+begin_quote
+   This package will produce a buffer that matches the major mode of the
+   one you are currently in.  Use it with M-x scratch.  Doing that with a
+   prefix argument (C-u) will prompt for a major mode instead.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package scratch
+       :straight t
+       :config
+       (defun prot/scratch-buffer-setup ()
+       "Add contents to `scratch' buffer and name it accordingly.
+     If region is active, add its contents to the new buffer."
+       (let* ((mode major-mode)
+          (string (format "Scratch buffer for: %s\n\n" mode))
+          (region (with-current-buffer (current-buffer)
+              (if (region-active-p)
+                  (buffer-substring-no-properties
+                   (region-beginning)
+                   (region-end)))
+              ""))
+          (text (concat string region)))
+     (when scratch-buffer
+       (save-excursion
+         (insert text)
+         (goto-char (point-min))
+         (comment-region (point-at-bol) (point-at-eol)))
+       (forward-line 2))
+     (rename-buffer (format "*Scratch for %s*" mode) t)))
+       :hook (scratch-create-buffer-hook . prot/scratch-buffer-setup)
+       :bind ("C-c s" . scratch))
+   #+end_src
+
+** Tabs
+
+   #+begin_quote
+   All settings I configure here are meant to work in accordance with this
+   abstract conception of "tabs are work spaces".  Here are the main key
+   chords for =tab-bar= (they will all work properly if you keep the mode
+   active):
+   #+end_quote
+
+
+   | Key     | Description                       |
+   |---------+-----------------------------------|
+   | C-x t b | Open a buffer in a new tab        |
+   | C-x t d | Open a directory in a new tab     |
+   | C-x t f | Open a file in a new tab          |
+   | C-x t 0 | Close current tab                 |
+   | C-x t 1 | Close all other tabs              |
+   | C-x t 2 | Open current buffer in new tab    |
+   
+   #+begin_src emacs-lisp
+     (use-package tab-bar
+       :init
+       (setq tab-bar-close-button-show nil)
+       (setq tab-bar-close-last-tab-choice 'tab-bar-mode-disable)
+       (setq tab-bar-close-tab-select 'recent)
+       (setq tab-bar-new-tab-choice t)
+       (setq tab-bar-new-tab-to 'right)
+       (setq tab-bar-position nil)
+       (setq tab-bar-show nil)
+       (setq tab-bar-tab-hints nil)
+       (setq tab-bar-tab-name-function 'tab-bar-tab-name-all)
+       :config
+       (tab-bar-mode -1)
+       (tab-bar-history-mode -1)
+       :bind (("<s-tab>" . tab-next)
+          ("<S-s-tab>" . tab-previous)))
+
+     (use-package prot-tab
+       :straight (:type built-in)
+       :after tab-bar
+       :bind (("<f8>" . prot-tab-tab-bar-toggle)
+          ("C-x t t" . prot-tab-select-tab-dwim)
+          ("s-t" . prot-tab-select-tab-dwim)))
+   #+end_src
+
+** Highlight Annotations
+   
+   #+begin_src emacs-lisp
+     (use-package hl-todo
+       :straight t
+       :hook (prog-mode-hook . hl-todo-mode))
+   #+end_src
+
+** Backups
+
+   Backup files/buffers in a separate directory.
+
+   #+begin_src emacs-lisp
+     (use-package emacs
+       :config
+       (setq backup-directory-alist
+             '(("." . "~/.emacs.d/backup/")))
+       (setq backup-by-copying t)
+       (setq version-control t)
+       (setq delete-old-versions t)
+       (setq kept-new-versions 6)
+       (setq kept-old-versions 2)
+       (setq create-lockfiles nil))
+   #+end_src
+
+* Programming
+** Editing
+
+   Source: [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/emacs-init.org][Prot's dotfiles]].
+   
+   #+begin_quote
+   Emacs labels as “electric” any behavior that involves contextual auto-insertion of characters. 
+   #+end_quote
+   
+   #+begin_src emacs-lisp
+     (use-package electric
+       :config
+       (setq electric-pair-inhibit-predicate'electric-pair-conservative-inhibit)
+       (setq electric-pair-preserve-balance t)
+       (setq electric-pair-pairs
+         '((8216 . 8217)
+           (8220 . 8221)
+           (171 . 187)))
+       (setq electric-pair-skip-self 'electric-pair-default-skip-self)
+       (setq electric-pair-skip-whitespace nil)
+       (setq electric-pair-skip-whitespace-chars
+         '(9
+           10
+           32))
+       (setq electric-quote-context-sensitive t)
+       (setq electric-quote-paragraph t)
+       (setq electric-quote-string nil)
+       (setq electric-quote-replace-double t)
+       :hook (after-init-hook . (lambda ()
+                  (electric-indent-mode 1)
+                  (electric-pair-mode -1)
+                  (electric-quote-mode -1))))
+   #+end_src
+   
+   #+begin_quote
+   Configure the mode that highlights matching delimiters or parentheses.
+
+   Summary of what these do:
+
+   + Activate the mode upon startup.
+   + Show the matching delimiter/parenthesis if on screen, else show
+     nothing.  It is possible to highlight the expression enclosed by the
+     delimiters, by using either =mixed= or =expression=.  The latter always
+     highlights the entire balanced expression, while the former will only
+     do so if the matching delimiter is off screen.
+   + =show-paren-when-point-in-periphery= lets you highlight parentheses even
+     if the point is in their vicinity.  This means the beginning or end of
+     the line, with space in between.  I used that for a long while and it
+     server me well.  Now that I have a better understanding of Elisp, I
+     disable it.
+   + Do not highlight a match when the point is on the inside of the
+     parenthesis.
+   #+end_quote
+   
+   #+begin_src emacs-lisp
+     (use-package paren
+       :config
+       (setq show-paren-style 'parenthesis)
+       (setq show-paren-when-point-in-periphery nil)
+       (setq show-paren-when-point-inside-paren nil)
+       :hook (after-init-hook . show-paren-mode))
+   #+end_src
+   
+   Always indent using spaces.
+
+   #+begin_src emacs-lisp
+    (use-package emacs
+      :config
+      (setq-default tab-always-indent 'complete)
+      (setq-default tab-width 4)
+      (setq-default indent-tabs-mode nil))
+   #+end_src
+  
+   Use =eldoc= for contextual information in the echo area.
+
+   #+begin_src emacs-lisp
+    (use-package eldoc
+      :diminish
+      :config
+      (global-eldoc-mode 1))
+   #+end_src
+
+** Diffs
+   
+   Source: [[https://gitlab.com/protesilaos/dotfiles/-/blob/master/emacs/.emacs.d/emacs-init.org][Prot's dotfiles]].
+
+   #+begin_quote
+   Overview of my preferences for how diffs should look:
+
+   + Always start the buffer in a read-only state.  A typo will mess things
+     up when trying to apply a patch.
+   + After applying a diff hunk (=diff-apply-hunk= with =C-c C-a=) move on to
+     the next one.
+   + Update hunk headers automatically following an edit to the diff.
+   + Do not show word-wise ("refined") changes upon activation.  I prefer
+     to do so manually.  All such highlights are removed if you generate
+     the buffer again (with =g= as expected) and the default is to not show
+     word-wise changes.
+   + Do not prettify headers.  I like the standard "patch" looks.  It also
+     makes it easier to copy the diff elsewhere.
+
+   + =prot-diff-buffer-dwim= will produce a diff that compares the current
+     buffer to the last saved state of the underlying file.  If the buffer
+     has no unsaved edits, the command will produce a diff that compares
+     the file to its last registered version-controlled state.  Calling the
+     command with an optional prefix argument (=C-u=) will enable word-wise
+     highlighting across the diff.
+
+   + =prot-diff-refine-dwim= is how I manually control word-wise diff
+     highlights.  By default, the command will turn on refined changes
+     throughout the buffer.  If called with an optional prefix argument, it
+     will operate only on the diff hunk at point.  If the region is active,
+     it will instead apply fontification to the diff hunks encompassed by
+     the region.  And if word-wise highlights are already present, the
+     command will remove everything and leave point back where it was.
+
+   + =prot-diff-narrow-dwim= narrows to the diff hunk at point.  If narrowing
+     is already present, it widens the buffer.  When invoked with an
+     optional prefix argument, it narrows to the current file.
+
+   + =C-c C-c= or =M-o= takes you to the point of the changes in the source
+     file.  If you run this of the diff hunk's heading, you go to the
+     beginning of the context.  But if you place the point somewhere inside
+     of the diff's added changes or context, you will visit that exact
+     position in the original file (does not work for removed text because
+     technically it does not exist).
+
+   + When working with patches to source code, which are distributed
+     e.g. through email, you can apply the current hunk with =C-c C-a= or
+     test for compatibility with =C-c C-t=.  This is a nice way to easily
+     merge contributions from others, without having to go through the
+     workflow of some proprietary Git/Version-Control forge.
+
+   + With =M-n= and =M-p= you move between hunks.  With =M-}= and =M-{= or =M-N=, =M-P=
+     do the same between files.
+   #+end_quote
+
+   #+begin_src emacs-lisp
+     (use-package diff-mode
+       :config
+       (setq diff-default-read-only t)
+       (setq diff-advance-after-apply-hunk t)
+       (setq diff-update-on-the-fly t)
+       ;; The following are from Emacs 27.1
+       (setq diff-refine nil)                ; I do it on demand
+       (setq diff-font-lock-prettify nil)    ; better for patches
+       (setq diff-font-lock-syntax 'hunk-also))
+
+     (use-package prot-diff
+       :straight (:type built-in)
+       ;; `prot-diff-buffer-dwim' replaces the default for `vc-diff' (which I
+       ;; bind to another key---see VC section).
+       :bind (("C-x v =" . prot-diff-buffer-dwim)
+          :map diff-mode-map
+          ("C-c C-b" . prot-diff-refine-dwim) ; replace `diff-refine-hunk'
+          ("C-c C-n" . prot-diff-narrow-dwim)))
+   #+end_src
+
+** Magit
+
+   Magit is the best git client.
+
+   #+begin_src emacs-lisp
+     (use-package magit
+       :straight t
+       :bind ("C-c g" . magit-status))
+   #+end_src
+
+   #+begin_src emacs-lisp
+     (use-package git-commit
+       :after magit
+       :config
+       (setq git-commit-summary-max-length 50)
+       (setq git-commit-known-pseudo-headers
+         '("Signed-off-by"
+           "Acked-by"
+           "Modified-by"
+           "Cc"
+           "Suggested-by"
+           "Reported-by"
+           "Tested-by"
+           "Reviewed-by"))
+       (setq git-commit-style-convention-checks
+         '(non-empty-second-line
+           overlong-summary-line)))
+   #+end_src
+
+   Only highlight changes within a line.
+
+   #+begin_src emacs-lisp
+     (use-package magit-diff
+       :after magit
+       :config
+       (setq magit-diff-refine-hunk t))
+   #+end_src
+** Markdown
+
+   #+begin_src emacs-lisp
+     (use-package markdown-mode
+       :straight t
+       :config
+       ;; Allows for fenced block focus with C-c ' (same as Org blocks).
+       (use-package edit-indirect :straight t)
+       (setq markdown-fontify-code-blocks-natively t)
+       :mode ("\\.md$" . markdown-mode))
+   #+end_src
+** Linting
+
+   Prefer =flymake= since it's built-in.
+   
+   #+begin_src emacs-lisp
+     (use-package flymake
+       :after prot-project
+       :commands flymake-mode
+       :init
+       (setq flymake-fringe-indicator-position 'left-fringe)
+       (setq flymake-suppress-zero-counters t)
+       (setq flymake-start-on-flymake-mode t)
+       (setq flymake-no-changes-timeout nil)
+       (setq flymake-start-on-save-buffer t)
+       (setq flymake-proc-compilation-prevents-syntax-check t)
+       (setq flymake-wrap-around nil)
+       :bind (:map flymake-mode-map
+           ("C-c ! s" . flymake-start)
+           ("C-c ! d" . flymake-show-diagnostics-buffer)
+           ("C-c ! n" . flymake-goto-next-error)
+           ("C-c ! p" . flymake-goto-prev-error)))
+
+     (use-package flymake-diagnostic-at-point
+       :straight t
+       :after flymake
+       :config
+       (setq flymake-diagnostic-at-point-display-diagnostic-function
+         'flymake-diagnostic-at-point-display-minibuffer))
+   #+end_src
+
+*** Proselint
+
+    #+begin_src emacs-lisp
+      (use-package flymake-proselint
+    :straight t
+    :after flymake
+    :init
+    (dolist (mode '("markdown-mode" "org-mode" "text-mode"))
+      (add-hook (intern (concat mode "-hook")) #'flymake-proselint-setup)))
+    #+end_src
+    
+*** Aspell
+
+    #+begin_src emacs-lisp
+  (use-package flymake-aspell
+    :after (flyspell flymake)
+    :straight t
+    :init
+    (dolist (mode '("markdown-mode" "org-mode" "text-mode"))
+      (add-hook (intern (concat mode "-hook")) #'flymake-aspell-setup)))
+    #+end_src
+
+** Languages
+
 *** Prolog
 
     Use Prolog mode on files with a .pl extension.
@@ -917,12 +1360,15 @@
       (when (executable-find "swipl")
         (setq prolog-program-name `((swi ,(executable-find "swipl")) (t "pl"))))
     #+END_SRC
+    
 *** OCaml
 
     The combination of Merlin and Tuareg makes Emacs a fantastic editor for OCaml.
 
     #+BEGIN_SRC emacs-lisp
       (use-package tuareg
+        :straight t
+        :defer t
         :config
         (add-hook 'tuareg-mode-hook
                   (lambda()
@@ -931,7 +1377,8 @@
         (add-hook 'tuareg-mode-hook #'(lambda() (setq mode-name "🐫"))))
 
       (use-package merlin
-        :ensure t
+        :straight t
+        :defer t
         :custom
         (merlin-command 'opam)
         (merlin-completion-with-doc t)
@@ -961,6 +1408,8 @@
           (add-to-list 'company-backends 'merlin-company-backend)))
 
       (use-package flycheck-ocaml
+        :straight t
+        :defer t
         :hook (merlin-mode . +ocaml-init-flycheck-h)
         :config
         (defun +ocaml-init-flycheck-h ()
@@ -971,9 +1420,13 @@
           (flycheck-ocaml-setup)))
 
       (use-package merlin-eldoc
+        :straight t
+        :defer t
         :hook (merlin-mode . merlin-eldoc-setup))
 
       (use-package utop
+        :straight t
+        :defer t
         :hook (tuareg-mode . utop-minor-mode)
         :config
         (setq utop-command "opam config exec -- dune utop . -- -emacs"))
@@ -988,14 +1441,23 @@
       (with-eval-after-load 'ocamlformat
         (progn
           ;; HACK set the correct ocamlformat executable
-          (let ((ocamlformat-path (concat (substring (shell-command-to-string "eval $(opam env) && echo $OPAM_SWITCH_PREFIX") 0 -1) "/bin/ocamlformat")))
+          (let ((ocamlformat-path
+                 (concat (substring
+                          (shell-command-to-string
+                           "eval $(opam env) && echo $OPAM_SWITCH_PREFIX")
+                          0 -1)
+                         "/bin/ocamlformat")))
             (if (executable-find ocamlformat-path)
                 (progn
-                  (setq ocamlformat-command "/Users/samarth/Projects/AdventOfCode_2019/_opam/bin/ocamlformat")
-                  (add-hook 'tuareg-mode-hook #'(lambda () (add-hook 'before-save-hook 'ocamlformat-before-save))))
+                  ;; TODO set this
+                  (setq ocamlformat-command "")
+                  (add-hook 'tuareg-mode-hook
+                            #'(lambda ()
+                                (add-hook 'before-save-hook 'ocamlformat-before-save))))
               (message "Error: ocamlformat is not installed")))))
 
-      (let ((opam-share (ignore-errors (car (process-lines "opam" "config" "var" "share")))))
+      (let ((opam-share (ignore-errors
+                          (car (process-lines "opam" "config" "var" "share")))))
         (when (and opam-share (file-directory-p opam-share))
           (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
           (autoload 'merlin-mode "merlin" nil t nil)
@@ -1004,37 +1466,18 @@
     #+END_SRC
 
 * Org
-
-  Org Mode is the best plain text task management and notetaking system I have ever used. It's one of the "killer apps" for Emacs.
-
-** General Settings
-   Use bullets instead of asterisks for headings.
-
-   #+BEGIN_SRC emacs-lisp
-     (use-package org-bullets
-       :ensure t
-       :defer t
-       :init
-       (add-hook 'org-mode-hook #'org-bullets-mode))
-   #+END_SRC
-
-   Use syntax highlighting in source blocks while editing.
-
-   #+BEGIN_SRC emacs-lisp
-     (setq org-src-fontify-natively t)
-   #+END_SRC
-
+** General settings 
    Enable spellchecking.
 
-   #+BEGIN_SRC emacs-lisp
+   #+begin_src emacs-lisp
      (add-hook 'org-mode-hook 'flyspell-mode)
-   #+END_SRC
+   #+end_src
 
    Set up refile targets.
 
    #+BEGIN_SRC emacs-lisp
      (setq org-refile-targets '((nil :maxlevel . 1)
-                                (org-agenda-files :maxlevel . 1)))
+                (org-agenda-files :maxlevel . 1)))
    #+END_SRC
 
    Always start in visual-line-mode (soft line wrapping).
@@ -1064,14 +1507,15 @@
    #+END_SRC
 
    Create functions to open my tasks and another to open my homework. Called with =M-x RET tasks RET= or =M-x RET homework RET=.
+
    Source: [[https://github.com/munen/emacs.d/#general-configuration]]
 
    #+BEGIN_SRC emacs-lisp
      (defun set-org-agenda-files ()
        "Set different org-files to be used in org-agenda"
        (setq org-agenda-files (list (concat org-directory "tasks.org")
-                                    (concat org-directory "refile-beorg.org")
-                                    (concat org-directory "homework.org"))))
+                    (concat org-directory "refile-beorg.org")
+                    (concat org-directory "homework.org"))))
 
      (set-org-agenda-files)
 
